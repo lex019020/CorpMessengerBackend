@@ -3,10 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using CorpMessengerBackend.Models;
-using Firebase.Auth;
+using CorpMessengerBackend.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using User = CorpMessengerBackend.Models.User;
@@ -18,13 +17,12 @@ namespace CorpMessengerBackend.Controllers
     public class UsersController : ControllerBase
     {
         private UserContext _db;
-        private readonly FirebaseAuthProvider _auth;
+        private readonly IAuthService _auth;
 
-        public UsersController(UserContext context, IConfiguration configuration)
+        public UsersController(UserContext context, IConfiguration configuration, IAuthService authService)
         {
             _db = context;
-            _auth = new FirebaseAuthProvider(
-                new FirebaseConfig(configuration["FirebaseApiString:DefaultKey"]));
+            _auth = authService;
 
             if (!_db.Users.Any())
             {
@@ -64,10 +62,25 @@ namespace CorpMessengerBackend.Controllers
             user.Deleted = false;
             user.Modified = DateTime.Now;
 
-            // todo add user auth to firebase
+            try
+            {
+                user.UserId = _auth.CreateUser(new Credentials
+                {
+                    Email = user.Email,
+                    Password = user.FirstName + user.SecondName
+                });
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+            
+            if (user.UserId == "")
+                return BadRequest();
 
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
+
             return Ok(user);
         }
 
@@ -93,7 +106,7 @@ namespace CorpMessengerBackend.Controllers
             return Ok(user);
         }
 
-        [HttpDelete("{userId}")]
+        [HttpDelete/*("{userId}")*/]
         public async Task<ActionResult<User>> Delete(string userId, string token)
         {
             if (token != "123456")    // todo check for admin token

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using CorpMessengerBackend.Models;
 using CorpMessengerBackend.Services;
@@ -15,7 +16,7 @@ namespace CorpMessengerBackend.Controllers
         private readonly AuthContext _db;
         private readonly IAuthService _authService;
 
-        public AuthController(AuthContext context, IConfiguration configuration, IAuthService authService)
+        public AuthController(AuthContext context, IAuthService authService)
         {
             _db = context;
             _authService = authService;
@@ -37,32 +38,7 @@ namespace CorpMessengerBackend.Controllers
             if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
                 return BadRequest(new Credentials());
 
-            var auth = new Auth();
-
-            /*await _auth.SignInWithEmailAndPasswordAsync(credentials.Email, credentials.Password)
-                .ContinueWith(task =>
-                {
-                    if (task.IsCanceled)
-                    {
-                        // todo
-                    }
-
-                    if (task.IsFaulted)
-                    {
-                        // todo
-                    }
-
-                    var newUser = task.Result.User;
-                    var token = task.Result.FirebaseToken;
-                    auth = new Auth
-                    {
-                        AuthToken = token,
-                        DeviceId = credentials.DeviceId,
-                        UserId = newUser.LocalId,
-                        Modified = DateTime.Now
-                    };
-                    // todo
-                });*/
+            var auth = _authService.SignInEmail(credentials);
 
             if (auth.AuthToken == "") return Unauthorized();
             
@@ -72,7 +48,6 @@ namespace CorpMessengerBackend.Controllers
             credentials.Token = auth.AuthToken;
 
             return Ok( credentials );
-
         }
 
         [HttpDelete]
@@ -80,6 +55,36 @@ namespace CorpMessengerBackend.Controllers
         {
             if (credentials.Token == "" || credentials.DeviceId == "")
                 return BadRequest(false);
+
+            var authToDel = _db.Auths.First(
+                au => au.AuthToken == credentials.Token
+                      && au.DeviceId == credentials.DeviceId);
+
+            if (authToDel == null) return Ok( false );
+
+            _db.Auths.Remove( authToDel );
+            await _db.SaveChangesAsync();
+
+            return Ok( true );
         }
+
+        /*[Route("api/[controller]/refresh")]
+        [HttpPost] // user renew auth 
+        public async Task<ActionResult<Credentials>> Post(Credentials credentials)
+        {
+            if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
+                return BadRequest(new Credentials());
+
+            var auth = _authService.SignInEmail(credentials);
+
+            if (auth.AuthToken == "") return Unauthorized();
+
+            await _db.Auths.AddAsync(auth);
+            await _db.SaveChangesAsync();
+
+            credentials.Token = auth.AuthToken;
+
+            return Ok(credentials);
+        }*/
     }
 }

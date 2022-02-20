@@ -28,11 +28,14 @@ namespace CorpMessengerBackend
             services.AddDbContext<UserContext>(opt => opt.UseSqlServer(con));
             services.AddDbContext<AuthContext>(opt => opt.UseSqlServer(con));
             services.AddDbContext<DepartmentContext>(opt => opt.UseSqlServer(con));
+            services.AddDbContext<ChatContext>(opt => opt.UseSqlServer(con));
+            services.AddDbContext<MessageContext>(opt => opt.UseSqlServer(con));
+            services.AddDbContext<UserChatLinkContext>(opt => opt.UseSqlServer(con));
 
             services.AddControllers();
 
             services.AddSingleton<IAuthService>(
-                new AuthService(
+                new FirebaseAuthService(
                     new FirebaseConfig(
                         Configuration["FirebaseApiString:DefaultKey"])));
         }

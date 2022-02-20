@@ -1,24 +1,22 @@
 ﻿using System;
 using CorpMessengerBackend.Models;
 using Firebase.Auth;
-using FirebaseAdmin;
-using User = CorpMessengerBackend.Models.User;
 
 namespace CorpMessengerBackend.Services
 {
-    public class AuthService : IAuthService
+    public class FirebaseAuthService : IAuthService
     {
-        private FirebaseAuthProvider _auth;
-        //Firebase.Auth.FirebaseAuth auth;// = Firebase.Auth.FirebaseAuth.DefaultInstance;
+        private readonly FirebaseAuthProvider _auth;
 
 
-        public AuthService(FirebaseConfig config)
+        public FirebaseAuthService(FirebaseConfig config)
         {
             _auth = new FirebaseAuthProvider(config);
             
-            var defaultApp = FirebaseApp.Create();
+            //var defaultApp = FirebaseApp.Create();
         }
 
+        // todo выкинуть в помойку
         public Auth SignInEmail(Credentials credentials)
         {
             var resAuth = new Auth();
@@ -54,6 +52,7 @@ namespace CorpMessengerBackend.Services
             return resAuth;
         }
 
+        // todo выкинуть в помойку
         public bool SignOut(Credentials credentials)
         {
             //throw new NotImplementedException();
@@ -87,11 +86,16 @@ namespace CorpMessengerBackend.Services
             return userId;
         }
 
+        // todo выкинуть в помойку (????????)
         public string CheckUserAuth(string token)
         {
             try
             {
-                return _auth.GetUserAsync(token).Result.LocalId;
+                var res = _auth.GetUserAsync(token);//.Result.LocalId;
+
+                //_auth.RefreshAuthAsync(new FirebaseAuth().)
+
+                return res.Result.LocalId;
             }
             catch (FirebaseAuthException e)
             {
