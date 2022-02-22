@@ -93,7 +93,7 @@ namespace CorpMessengerBackend.Controllers
             return Ok(res.Entity);
         }
 
-        [HttpDelete]  // update department
+        /*[HttpDelete]  // delete department todo надо ли вообще?
         public async Task<ActionResult<Department>> Delete(string token, long depId)
         {
             if (token != "123456")    // todo check for admin or user token
@@ -108,6 +108,6 @@ namespace CorpMessengerBackend.Controllers
             await _db.SaveChangesAsync();
 
             return Ok(res.Entity);
-        }
+        }*/
     }
 }

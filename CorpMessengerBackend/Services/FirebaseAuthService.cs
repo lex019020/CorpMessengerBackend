@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using CorpMessengerBackend.Models;
 using Firebase.Auth;
 
@@ -17,7 +18,7 @@ namespace CorpMessengerBackend.Services
         }
 
         // todo выкинуть в помойку
-        public Auth SignInEmail(Credentials credentials)
+        public Task<Auth> SignInEmail(Credentials credentials)
         {
             var resAuth = new Auth();
 
@@ -57,6 +58,11 @@ namespace CorpMessengerBackend.Services
         {
             //throw new NotImplementedException();
             return false;
+        }
+
+        Auth IAuthService.SignInEmail(Credentials credentials)
+        {
+            throw new NotImplementedException();
         }
 
         public string CreateUser(Credentials credentials)
@@ -103,6 +109,11 @@ namespace CorpMessengerBackend.Services
                 return "";
             }
             //throw new NotImplementedException();
+        }
+
+        public Auth RenewAuth(Credentials credentials)
+        {
+            throw new NotImplementedException();
         }
     }
 }

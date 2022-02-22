@@ -28,6 +28,8 @@ namespace CorpMessengerBackend.Controllers
             if (credentials.DeviceId == "" || credentials.Token == "")
                 return BadRequest(false);
 
+            // todo check with auth service
+
             return await _db.Auths.AnyAsync(a => a.AuthToken == credentials.Token
                                                 && a.DeviceId == credentials.DeviceId);
         }
@@ -40,7 +42,7 @@ namespace CorpMessengerBackend.Controllers
 
             var auth = _authService.SignInEmail(credentials);
 
-            if (auth.AuthToken == "") return Unauthorized();
+            if (auth == null || auth.AuthToken == "") return Unauthorized();
             
             await _db.Auths.AddAsync(auth);
             await _db.SaveChangesAsync();

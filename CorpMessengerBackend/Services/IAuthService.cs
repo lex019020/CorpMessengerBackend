@@ -16,7 +16,7 @@ namespace CorpMessengerBackend.Services
         /// <exception cref="UnauthorizedAccessException"></exception>
         public Auth SignInEmail(Credentials credentials);
 
-         public bool SignOut(Credentials credentials);
+         //public bool SignOut(Credentials credentials);
 
         /// <summary>
         /// Create new user
@@ -32,5 +32,12 @@ namespace CorpMessengerBackend.Services
         /// <param name="token">Auth token</param>
         /// <returns>UserId</returns>
         public string CheckUserAuth(string token);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="credentials"></param>
+        /// <returns></returns>
+        public Auth RenewAuth(Credentials credentials);
     }
 }

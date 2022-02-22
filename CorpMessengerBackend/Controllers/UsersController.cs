@@ -16,24 +16,50 @@ namespace CorpMessengerBackend.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private UserContext _db;
+        private readonly UserContext _dbUsers;
+        private readonly UserSecretContext _dbUserSecrets;
         private readonly IAuthService _auth;
 
-        public UsersController(UserContext context, IConfiguration configuration, IAuthService authService)
+        public UsersController(UserContext userContext, UserSecretContext secretContext,
+            IConfiguration configuration, IAuthService authService)
         {
-            _db = context;
+            _dbUsers = userContext;
+            _dbUserSecrets = secretContext;
             _auth = authService;
 
-            if (!_db.Users.Any())
+            if (!_dbUsers.Users.Any())
             {
-                _db.Users.Add(new User()
+                var basicUser = _dbUsers.Users.Add(new User()
                 {
                     DepartmentId = 0, FirstName = "Admin", Modified = DateTime.Now,
                     Patronymic = "Adminovich", SecondName = "Adminov", UserId = "0",
                     Email = "admin@admin.com"
+                }).Entity;
+
+
+                _dbUserSecrets.UserSecrets.Add(new UserSecret()
+                {
+                    UserId = basicUser.UserId,
+                    Secret = CryptographyService.HashPassword("qwerty123456")
                 });
-                _db.SaveChanges();
             }
+            else
+            {
+                foreach (var user in _dbUsers.Users.Where(
+                    u => !u.Deleted && !_dbUserSecrets.UserSecrets.Any(
+                        s => s.UserId == u.UserId)))
+                {
+                    _dbUserSecrets.UserSecrets.Add(new UserSecret()
+                    {
+                        UserId = user.UserId,
+                        Secret = CryptographyService.HashPassword(user.FirstName + user.SecondName)
+                    });
+                }
+            }
+
+
+            _dbUsers.SaveChanges();
+            _dbUserSecrets.SaveChanges();
         }
 
 
@@ -42,7 +68,7 @@ namespace CorpMessengerBackend.Controllers
         {
             if (token == "123456")    // todo check for admin token && users token
             {
-                return await _db.Users.ToArrayAsync();
+                return await _dbUsers.Users.ToArrayAsync();
             }
 
             return Unauthorized();
@@ -62,24 +88,41 @@ namespace CorpMessengerBackend.Controllers
             user.Deleted = false;
             user.Modified = DateTime.Now;
 
+            //try
+            //{
+            //    user.UserId = _auth.CreateUser(new Credentials
+            //    {
+            //        Email = user.Email,
+            //        Password = user.FirstName + user.SecondName
+            //    });
+            //}
+            //catch (Exception e)
+            //{
+            //    return BadRequest(e.Message);
+            //}
+
             try
             {
-                user.UserId = _auth.CreateUser(new Credentials
-                {
-                    Email = user.Email,
-                    Password = user.FirstName + user.SecondName
-                });
+                user = _dbUsers.Users.Add(user).Entity;
             }
             catch (Exception e)
             {
+                // todo log
                 return BadRequest(e.Message);
             }
-            
+
             if (user.UserId == "")
                 return BadRequest();
 
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
+            _dbUserSecrets.UserSecrets.Add(new UserSecret()
+            {
+                UserId = user.UserId,
+                Secret = CryptographyService.HashPassword(user.FirstName + user.SecondName)
+            });
+
+
+            await _dbUserSecrets.SaveChangesAsync();
+            await _dbUsers.SaveChangesAsync();
 
             return Ok(user);
         }
@@ -94,36 +137,48 @@ namespace CorpMessengerBackend.Controllers
             {
                 return BadRequest();
             }
-            if (!_db.Users.Any(x => x.UserId == user.UserId))
+            if (!_dbUsers.Users.Any(x => x.UserId == user.UserId && !x.Deleted))
             {
                 return NotFound();
             }
 
+            //// todo change pwd somehow
+
             user.Modified = DateTime.Now;
 
-            _db.Update(user);
-            await _db.SaveChangesAsync();
+            _dbUsers.Update(user);
+            await _dbUsers.SaveChangesAsync();
             return Ok(user);
         }
 
-        [HttpDelete/*("{userId}")*/]
+        [HttpDelete]
         public async Task<ActionResult<User>> Delete(string userId, string token)
         {
             if (token != "123456")    // todo check for admin token
                 return Unauthorized();
 
-            var user = _db.Users.FirstOrDefault(x => x.UserId == userId);
+            var user = _dbUsers.Users.FirstOrDefault(x => x.UserId == userId
+            && !x.Deleted);
             if (user == null)
             {
                 return NotFound();
             }
 
             user.Deleted = true;
-            _db.Users.Update(user);
+            _dbUsers.Users.Update(user);
+
+                /*var secretToDel = _dbUserSecrets.UserSecrets.FirstOrDefault(
+                s => s.UserId == userId);
+
+            if (secretToDel != null)
+            {
+                _dbUserSecrets.UserSecrets.Remove(secretToDel);
+                await _dbUserSecrets.SaveChangesAsync();
+            }*/
 
             // todo del all auth & chat links
 
-            await _db.SaveChangesAsync();
+            await _dbUsers.SaveChangesAsync();
             return Ok(user);
         }
     }

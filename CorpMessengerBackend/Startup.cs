@@ -25,6 +25,7 @@ namespace CorpMessengerBackend
         public void ConfigureServices(IServiceCollection services)
         {
             var con = Configuration.GetConnectionString("DefaultConnection");
+
             services.AddDbContext<UserContext>(opt => opt.UseSqlServer(con));
             services.AddDbContext<AuthContext>(opt => opt.UseSqlServer(con));
             services.AddDbContext<DepartmentContext>(opt => opt.UseSqlServer(con));
@@ -34,10 +35,7 @@ namespace CorpMessengerBackend
 
             services.AddControllers();
 
-            services.AddSingleton<IAuthService>(
-                new FirebaseAuthService(
-                    new FirebaseConfig(
-                        Configuration["FirebaseApiString:DefaultKey"])));
+            services.AddSingleton<IAuthService, LocalAuthService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
