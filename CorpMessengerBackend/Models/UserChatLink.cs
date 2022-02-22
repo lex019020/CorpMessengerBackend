@@ -9,7 +9,7 @@ namespace CorpMessengerBackend.Models
     public class UserChatLink
     {
         [Key]
-        public long UserId { get; set; }
+        public string UserId { get; set; }
 
         [Key]
         public long ChatId { get; set; }

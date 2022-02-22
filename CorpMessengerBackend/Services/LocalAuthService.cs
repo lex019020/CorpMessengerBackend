@@ -2,33 +2,29 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CorpMessengerBackend.HttpObjects;
 using CorpMessengerBackend.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CorpMessengerBackend.Services
 {
     public class LocalAuthService : IAuthService
     {
-        private readonly AuthContext _dbAuth;
-        private readonly UserContext _dbUsers;
-        private readonly UserSecretContext _dbUsersSecrets;
 
-        public LocalAuthService(AuthContext authContext, UserContext userContext, 
-            UserSecretContext secretContext)
+        public LocalAuthService()
         {
-            _dbAuth = authContext;
-            _dbUsers = userContext;
-            _dbUsersSecrets = secretContext;
         }
 
-        public Auth SignInEmail(Credentials credentials)
+        public Auth SignInEmail(AppDataContext context, Credentials credentials)
         {
-            var user = _dbUsers.Users.FirstOrDefault(u => u.Email == credentials.Email);
+            var user = context.Users.FirstOrDefault(u => u.Email == credentials.Email);
 
             if (user == null) return null;
 
-            var secret = _dbUsersSecrets.UserSecrets.FirstOrDefault(
-                s => s.UserId == user.UserId)
+            var secret = context.UserSecrets.FirstOrDefault(
+                    s => s.UserId == user.UserId)
                 ?.Secret;
+            
 
             if (secret == null)
             {
@@ -52,66 +48,66 @@ namespace CorpMessengerBackend.Services
             return newAuth;
         }
 
-        public bool SignOut(Credentials credentials)
+        public bool SignOut(AppDataContext context, Credentials credentials)
         {
-            var authToDel = _dbAuth.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token);
+            var authToDel = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token);
 
             if (authToDel == null) return false;
 
-            _dbAuth.Auths.Remove(authToDel);
-            _dbAuth.SaveChanges();
+            context.Auths.Remove(authToDel);
+            context.SaveChanges();
 
             return true;
         }
 
-        public bool SignOutFull(string userId)
+        public bool SignOutFull(AppDataContext context, string userId)
         {
-            var authToDel = _dbAuth.Auths.FirstOrDefault(a => a.UserId == userId);
+            var authToDel = context.Auths.FirstOrDefault(a => a.UserId == userId);
 
             if (authToDel == null) return false;
 
             do
             {
-                _dbAuth.Auths.Remove(authToDel);
+                context.Auths.Remove(authToDel);
 
-                authToDel = _dbAuth.Auths.FirstOrDefault(a => a.UserId == userId);
+                authToDel = context.Auths.FirstOrDefault(a => a.UserId == userId);
             } while (authToDel != null);
 
-            _dbAuth.SaveChanges();
+            context.SaveChanges();
 
             return true;
         }
 
-        public string CreateUser(Credentials credentials)
+        public string CreateUser(AppDataContext context, Credentials credentials)
         {
             throw new NotImplementedException();
         }
 
-        public string CheckUserAuth(string token)
+        public string CheckUserAuth(AppDataContext context, string token)
         {
-            var auth = _dbAuth.Auths.FirstOrDefault(a => a.AuthToken == token);
+            var auth = context.Auths.FirstOrDefault(a => a.AuthToken == token);
 
             if (auth == null
                 ||auth.Modified.AddDays(7) < DateTime.Now
-                ||!_dbUsers.Users.Any(u => u.UserId == auth.UserId && !u.Deleted)) 
+                ||!context.Users.Any(u => u.UserId == auth.UserId && !u.Deleted)) 
                 return "";
             
             return auth.UserId;
         }
 
-        public Auth RenewAuth(Credentials credentials)
+        public Auth RenewAuth(AppDataContext context, Credentials credentials)
         {
-            var auth = _dbAuth.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token 
+            var auth = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token 
                                                          && a.DeviceId == credentials.DeviceId);
 
             if (auth == null 
-            || !_dbUsers.Users.Any(u => !u.Deleted && u.UserId == auth.UserId)) 
+            || !context.Users.Any(u => !u.Deleted && u.UserId == auth.UserId)) 
                 return null;
 
             auth.AuthToken = CryptographyService.GenerateNewToken();
             auth.Modified = DateTime.Now;
 
-            _dbAuth.Auths.Update(auth);
+            context.Auths.Update(auth);
 
             return auth;
         }

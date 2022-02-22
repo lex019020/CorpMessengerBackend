@@ -14,12 +14,12 @@ namespace CorpMessengerBackend.Controllers
     [ApiController]
     public class DepartmentController : ControllerBase
     {
-        private readonly DepartmentContext _db;
+        private readonly AppDataContext _db;
         private readonly IAuthService _authService;
 
-        public DepartmentController(DepartmentContext context, IAuthService auth)
+        public DepartmentController(AppDataContext dataContext, IAuthService auth)
         {
-            _db = context;
+            _db = dataContext;
             _authService = auth;
 
             if (!_db.Departments.Any())
@@ -50,7 +50,7 @@ namespace CorpMessengerBackend.Controllers
                 return Unauthorized();
 
             if (!_db.Departments.Any(d => d.DepartmentId == depId))
-                return BadRequest();
+                return NotFound();
 
             return Ok( await _db.Departments.FirstAsync(
                 d => d.DepartmentId == depId) );

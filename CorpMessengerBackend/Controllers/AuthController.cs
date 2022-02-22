@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using CorpMessengerBackend.HttpObjects;
 using CorpMessengerBackend.Models;
 using CorpMessengerBackend.Services;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,10 @@ namespace CorpMessengerBackend.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly AuthContext _db;
+        private readonly AppDataContext _db;
         private readonly IAuthService _authService;
 
-        public AuthController(AuthContext context, IAuthService authService)
+        public AuthController(AppDataContext context, IAuthService authService)
         {
             _db = context;
             _authService = authService;
@@ -40,7 +41,7 @@ namespace CorpMessengerBackend.Controllers
             if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
                 return BadRequest(new Credentials());
 
-            var auth = _authService.SignInEmail(credentials);
+            var auth = _authService.SignInEmail(_db, credentials);
 
             if (auth == null || auth.AuthToken == "") return Unauthorized();
             

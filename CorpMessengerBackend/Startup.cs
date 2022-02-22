@@ -25,13 +25,8 @@ namespace CorpMessengerBackend
         public void ConfigureServices(IServiceCollection services)
         {
             var con = Configuration.GetConnectionString("DefaultConnection");
-
-            services.AddDbContext<UserContext>(opt => opt.UseSqlServer(con));
-            services.AddDbContext<AuthContext>(opt => opt.UseSqlServer(con));
-            services.AddDbContext<DepartmentContext>(opt => opt.UseSqlServer(con));
-            services.AddDbContext<ChatContext>(opt => opt.UseSqlServer(con));
-            services.AddDbContext<MessageContext>(opt => opt.UseSqlServer(con));
-            services.AddDbContext<UserChatLinkContext>(opt => opt.UseSqlServer(con));
+            
+            services.AddDbContext<AppDataContext>(opt => opt.UseSqlServer(con));
 
             services.AddControllers();
 
@@ -40,12 +35,6 @@ namespace CorpMessengerBackend
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-
-            FirebaseApp.Create(new AppOptions()
-            {
-                Credential = GoogleCredential.GetApplicationDefault(),
-            });
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
