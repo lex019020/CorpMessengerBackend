@@ -167,18 +167,11 @@ namespace CorpMessengerBackend.Controllers
             user.Deleted = true;
             _dbUsers.Users.Update(user);
 
-                /*var secretToDel = _dbUserSecrets.UserSecrets.FirstOrDefault(
-                s => s.UserId == userId);
-
-            if (secretToDel != null)
-            {
-                _dbUserSecrets.UserSecrets.Remove(secretToDel);
-                await _dbUserSecrets.SaveChangesAsync();
-            }*/
-
-            // todo del all auth & chat links
-
             await _dbUsers.SaveChangesAsync();
+
+            _auth.SignOutFull(userId);
+            // todo del all chat links
+
             return Ok(user);
         }
     }

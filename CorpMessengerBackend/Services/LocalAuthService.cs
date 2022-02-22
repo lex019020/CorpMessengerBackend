@@ -52,6 +52,36 @@ namespace CorpMessengerBackend.Services
             return newAuth;
         }
 
+        public bool SignOut(Credentials credentials)
+        {
+            var authToDel = _dbAuth.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token);
+
+            if (authToDel == null) return false;
+
+            _dbAuth.Auths.Remove(authToDel);
+            _dbAuth.SaveChanges();
+
+            return true;
+        }
+
+        public bool SignOutFull(string userId)
+        {
+            var authToDel = _dbAuth.Auths.FirstOrDefault(a => a.UserId == userId);
+
+            if (authToDel == null) return false;
+
+            do
+            {
+                _dbAuth.Auths.Remove(authToDel);
+
+                authToDel = _dbAuth.Auths.FirstOrDefault(a => a.UserId == userId);
+            } while (authToDel != null);
+
+            _dbAuth.SaveChanges();
+
+            return true;
+        }
+
         public string CreateUser(Credentials credentials)
         {
             throw new NotImplementedException();

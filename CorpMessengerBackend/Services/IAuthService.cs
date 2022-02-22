@@ -16,7 +16,14 @@ namespace CorpMessengerBackend.Services
         /// <exception cref="UnauthorizedAccessException"></exception>
         public Auth SignInEmail(Credentials credentials);
 
-         //public bool SignOut(Credentials credentials);
+        public bool SignOut(Credentials credentials);
+
+        /// <summary>
+        /// Full sign-out
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public bool SignOutFull(string userId);
 
         /// <summary>
         /// Create new user
