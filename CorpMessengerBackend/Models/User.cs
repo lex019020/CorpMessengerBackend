@@ -9,7 +9,7 @@ namespace CorpMessengerBackend.Models
         [Key]
         public string UserId { get; set; }
 
-        [Key]
+        [Required]
         public long DepartmentId { get; set; }
 
         [Required]

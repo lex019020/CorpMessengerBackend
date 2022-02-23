@@ -16,7 +16,7 @@ namespace CorpMessengerBackend.Models
         [Required]
         public long ChatId { get; set; }
 
-        public long UserId { get; set; }
+        public string UserId { get; set; }
 
         [Required]
         public string Text { get; set; }
