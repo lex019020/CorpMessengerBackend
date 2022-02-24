@@ -191,6 +191,8 @@ namespace CorpMessengerBackend.Controllers
                 Notifications = true
             }).AsTask().ContinueWith(async _ => await _db.SaveChangesAsync());
 
+            // todo в чат системное сообщение
+
             return Ok(true);
         }
 
@@ -229,6 +231,8 @@ namespace CorpMessengerBackend.Controllers
             _db.UserChatLinks.Remove(link);
 
             await _db.SaveChangesAsync();
+
+            // todo в чат системное сообщение
 
             return Ok(true);
         }

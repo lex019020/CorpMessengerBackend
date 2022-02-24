@@ -19,5 +19,11 @@ namespace CorpMessengerBackend.Models
         public long ChatId { get; set; }
 
         public bool Notifications { get; set; }
+
+        [ForeignKey("ChatId")]
+        public virtual Chat Chat { get; set; }
+
+        [ForeignKey("UserId")]
+        public virtual User User { get; set; }
     }
 }
