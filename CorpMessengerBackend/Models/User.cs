@@ -7,7 +7,8 @@ namespace CorpMessengerBackend.Models
     public class User
     {
         [Key]
-        public string UserId { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long UserId { get; set; }
 
         [Required]
         public long DepartmentId { get; set; }

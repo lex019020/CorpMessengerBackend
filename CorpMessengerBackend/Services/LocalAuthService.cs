@@ -60,7 +60,7 @@ namespace CorpMessengerBackend.Services
             return true;
         }
 
-        public bool SignOutFull(AppDataContext context, string userId)
+        public bool SignOutFull(AppDataContext context, long userId)
         {
             var authToDel = context.Auths.FirstOrDefault(a => a.UserId == userId);
 
@@ -83,14 +83,14 @@ namespace CorpMessengerBackend.Services
             throw new NotImplementedException();
         }
 
-        public string CheckUserAuth(AppDataContext context, string token)
+        public long CheckUserAuth(AppDataContext context, string token)
         {
             var auth = context.Auths.FirstOrDefault(a => a.AuthToken == token);
 
             if (auth == null
                 ||auth.Modified.AddDays(7) < DateTime.Now
                 ||!context.Users.Any(u => u.UserId == auth.UserId && !u.Deleted)) 
-                return "";
+                return 0;
             
             return auth.UserId;
         }

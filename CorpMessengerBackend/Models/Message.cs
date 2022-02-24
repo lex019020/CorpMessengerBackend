@@ -13,12 +13,12 @@ namespace CorpMessengerBackend.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public long MessageId { get; set; }
+        public Guid MessageId { get; set; }
 
         [Required]
         public long ChatId { get; set; }
 
-        public string UserId { get; set; }
+        public long UserId { get; set; }
 
         [Required]
         public string Text { get; set; }

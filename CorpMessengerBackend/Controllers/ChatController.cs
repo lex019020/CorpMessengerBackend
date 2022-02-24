@@ -30,10 +30,11 @@ namespace CorpMessengerBackend.Controllers
         {
             // проверить что польз авторизован
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == "") return Unauthorized();
+            if (userId == 0) return Unauthorized();
 
             var retList = new List<ChatInfo>();
 
+            // todo async
             // собираем список чатов
             foreach (var userChatLink in _db.UserChatLinks.Where( 
                 ucl => ucl.UserId == userId))
@@ -56,7 +57,7 @@ namespace CorpMessengerBackend.Controllers
         {
             // проверить что польз авторизован
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == "") return Unauthorized();
+            if (userId == 0) return Unauthorized();
 
             // todo admin thing
 
@@ -78,7 +79,7 @@ namespace CorpMessengerBackend.Controllers
         {
             // проверить что польз авторизован
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == "") return Unauthorized();
+            if (userId == 0) return Unauthorized();
 
             // проверить что он в списке
             var userList = chatInfo.Users;
@@ -131,7 +132,7 @@ namespace CorpMessengerBackend.Controllers
         {
             // проверить что польз авторизован
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == "") return Unauthorized();
+            if (userId == 0) return Unauthorized();
 
             // todo admin thing
 
@@ -157,10 +158,10 @@ namespace CorpMessengerBackend.Controllers
         // add user to chat
         [HttpPost]
         [Route("api/[controller]/addUser")]
-        public async Task<ActionResult<bool>> AddUser(string token, long chatId, string userToAdd)
+        public async Task<ActionResult<bool>> AddUser(string token, long chatId, long userToAdd)
         {
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == "") return Unauthorized();
+            if (userId == 0) return Unauthorized();
 
             // todo admin thing
 
@@ -199,10 +200,10 @@ namespace CorpMessengerBackend.Controllers
         // kick user
         [HttpPost]
         [Route("api/[controller]/kickUser")]
-        public async Task<ActionResult<bool>> KickUser(string token, long chatId, string userToKick)
+        public async Task<ActionResult<bool>> KickUser(string token, long chatId, long userToKick)
         {
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == "") return Unauthorized();
+            if (userId == 0) return Unauthorized();
 
             // todo admin thing
 
@@ -244,7 +245,7 @@ namespace CorpMessengerBackend.Controllers
 
             if (chat == null) return null;
 
-            retInfo.Users = new List<string>();
+            retInfo.Users = new List<long>();
 
             foreach (var userChatLink in _db.UserChatLinks
                 .Where(ucl => ucl.ChatId == chat.ChatId))

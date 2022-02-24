@@ -9,10 +9,10 @@ namespace CorpMessengerBackend.Models
     public class Auth
     {
         [Key]
-        public string AuthId { get; set; }
+        public Guid AuthId { get; set; }
 
         [Required]
-        public string UserId { get; set; }
+        public long UserId { get; set; }
 
         [Required]
         public string AuthToken { get; set; }

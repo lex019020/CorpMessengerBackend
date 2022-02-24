@@ -27,7 +27,7 @@ namespace CorpMessengerBackend.Services
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public bool SignOutFull(AppDataContext context, string userId);
+        public bool SignOutFull(AppDataContext context, long userId);
 
         /// <summary>
         /// Create new user
@@ -42,7 +42,7 @@ namespace CorpMessengerBackend.Services
         /// </summary>
         /// <param name="token">Auth token</param>
         /// <returns>UserId</returns>
-        public string CheckUserAuth(AppDataContext context, string token);
+        public long CheckUserAuth(AppDataContext context, string token);
 
         /// <summary>
         /// 

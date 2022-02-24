@@ -30,7 +30,7 @@ namespace CorpMessengerBackend.Controllers
                 var basicUser = _db.Users.Add(new User()
                 {
                     DepartmentId = 0, FirstName = "Admin", Modified = DateTime.Now,
-                    Patronymic = "Adminovich", SecondName = "Adminov", UserId = "0",
+                    Patronymic = "Adminovich", SecondName = "Adminov",
                     Email = "admin@admin.com"
                 }).Entity;
 
@@ -108,7 +108,7 @@ namespace CorpMessengerBackend.Controllers
                 return BadRequest(e.Message);
             }
 
-            if (user.UserId == "")
+            if (user.UserId == 0)
                 return BadRequest();
 
             _db.UserSecrets.Add(new UserSecret()
@@ -148,7 +148,7 @@ namespace CorpMessengerBackend.Controllers
         }
 
         [HttpDelete]
-        public async Task<ActionResult<User>> Delete(string userId, string token)
+        public async Task<ActionResult<User>> Delete(long userId, string token)
         {
             if (token != "123456")    // todo check for admin token
                 return Unauthorized();

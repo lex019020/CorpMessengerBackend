@@ -28,7 +28,7 @@ namespace CorpMessengerBackend.Controllers
         public async Task<ActionResult<List<Message>>> Get(string token, long datetime)
         {
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == "") return Unauthorized();
+            if (userId == 0) return Unauthorized();
 
             // todo admin things??
 
@@ -48,7 +48,7 @@ namespace CorpMessengerBackend.Controllers
         public async Task<ActionResult<List<Message>>> Get(string token, long datetime, long chatId)
         {
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == "") return Unauthorized();
+            if (userId == 0) return Unauthorized();
 
             // todo admin things??
 
@@ -70,7 +70,7 @@ namespace CorpMessengerBackend.Controllers
         public async Task<ActionResult<Message>> Post(string token, long chatId, string text)
         {
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == "") return Unauthorized();
+            if (userId == 0) return Unauthorized();
 
             // todo admin things??
 
