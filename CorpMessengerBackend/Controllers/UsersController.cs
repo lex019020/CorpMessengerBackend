@@ -63,10 +63,8 @@ namespace CorpMessengerBackend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> Get(string token)
         {
-            if (token == "123456")    // todo check for admin token && users token
-            {
+            if (_auth.CheckUserAuth(_db, token) != 0 || _auth.CheckAdminAuth(_db, token))
                 return await _db.Users.ToArrayAsync();
-            }
 
             return Unauthorized();
         }
@@ -74,7 +72,7 @@ namespace CorpMessengerBackend.Controllers
         [HttpPost]  // create new user
         public async Task<ActionResult<User>> Post(User user, string token)
         {
-            if (token != "123456")    // todo check for admin token
+            if (!_auth.CheckAdminAuth(_db, token))
                 return Unauthorized();
 
             if (user == null)
@@ -84,19 +82,6 @@ namespace CorpMessengerBackend.Controllers
 
             user.Deleted = false;
             user.Modified = DateTime.Now;
-
-            //try
-            //{
-            //    user.UserId = _auth.CreateUser(new Credentials
-            //    {
-            //        Email = user.Email,
-            //        Password = user.FirstName + user.SecondName
-            //    });
-            //}
-            //catch (Exception e)
-            //{
-            //    return BadRequest(e.Message);
-            //}
 
             try
             {
@@ -126,7 +111,7 @@ namespace CorpMessengerBackend.Controllers
         [HttpPut]   // update user info
         public async Task<ActionResult<User>> Put(User user, string token)
         {
-            if (token != "123456")    // todo check for admin token
+            if (!_auth.CheckAdminAuth(_db, token))
                 return Unauthorized();
 
             if (user == null)
@@ -150,7 +135,7 @@ namespace CorpMessengerBackend.Controllers
         [HttpDelete]
         public async Task<ActionResult<User>> Delete(long userId, string token)
         {
-            if (token != "123456")    // todo check for admin token
+            if (!_auth.CheckAdminAuth(_db, token))    // todo check for admin token
                 return Unauthorized();
 
             var user = _db.Users.FirstOrDefault(x => x.UserId == userId

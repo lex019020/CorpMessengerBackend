@@ -30,19 +30,18 @@ namespace CorpMessengerBackend.Services
         public bool SignOutFull(AppDataContext context, long userId);
 
         /// <summary>
-        /// Create new user
-        /// </summary>
-        /// <param name="user"></param>
-        /// <returns>UserId</returns>
-        /// <exception cref="Exception"></exception>
-        public string CreateUser(AppDataContext context, Credentials credentials);
-
-        /// <summary>
         /// Check if user is logged in
         /// </summary>
         /// <param name="token">Auth token</param>
         /// <returns>UserId</returns>
         public long CheckUserAuth(AppDataContext context, string token);
+
+        /// <summary>
+        /// Check for admin token
+        /// </summary>
+        /// <param name="token">Auth token</param>
+        /// <returns>Is auth correct</returns>
+        public bool CheckAdminAuth(AppDataContext context, string token);
 
         /// <summary>
         /// 

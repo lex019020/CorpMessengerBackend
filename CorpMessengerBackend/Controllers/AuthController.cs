@@ -29,13 +29,10 @@ namespace CorpMessengerBackend.Controllers
             if (credentials.DeviceId == "" || credentials.Token == "")
                 return BadRequest(false);
 
-            // todo check with auth service
-
-            return await _db.Auths.AnyAsync(a => a.AuthToken == credentials.Token
-                                                && a.DeviceId == credentials.DeviceId);
+            return _authService.CheckUserAuth(_db, credentials.Token) != 0;
         }
 
-        [HttpPost] // user auth //todo recheck this siht
+        [HttpPost] // user auth
         public async Task<ActionResult<Credentials>> Post(Credentials credentials)
         {
             if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
@@ -44,9 +41,6 @@ namespace CorpMessengerBackend.Controllers
             var auth = _authService.SignInEmail(_db, credentials);
 
             if (auth == null || auth.AuthToken == "") return Unauthorized();
-            
-            await _db.Auths.AddAsync(auth);
-            await _db.SaveChangesAsync();
 
             credentials.Token = auth.AuthToken;
 
@@ -59,16 +53,25 @@ namespace CorpMessengerBackend.Controllers
             if (credentials.Token == "" || credentials.DeviceId == "")
                 return BadRequest(false);
 
-            var authToDel = _db.Auths.First(
-                au => au.AuthToken == credentials.Token
-                      && au.DeviceId == credentials.DeviceId);
+            var ret =_authService.SignOut(_db, credentials);
 
-            if (authToDel == null) return Ok( false );
+            return Ok( ret );
+        }
 
-            _db.Auths.Remove( authToDel );
-            await _db.SaveChangesAsync();
+        [HttpPost] // renew user auth
+        [Route("api/[controller]/renew")]
+        public async Task<ActionResult<Credentials>> UpdateAuth(Credentials credentials)
+        {
+            if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
+                return BadRequest(new Credentials());
 
-            return Ok( true );
+            var auth = _authService.RenewAuth(_db, credentials);
+
+            if (auth == null || auth.AuthToken == "") return Unauthorized();
+
+            credentials.Token = auth.AuthToken;
+
+            return Ok(credentials);
         }
 
         /*[Route("api/[controller]/refresh")]

@@ -9,6 +9,7 @@ namespace CorpMessengerBackend.Models
     public sealed class AppDataContext : DbContext
     {
         public DbSet<Auth> Auths { get; set; }
+        public DbSet<AdminAuth> AdminAuths { get; set; }
         public DbSet<Chat> Chats { get; set; }
         public DbSet<Department> Departments { get; set; }
         public DbSet<Message> Messages { get; set; }

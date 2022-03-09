@@ -28,36 +28,38 @@ namespace CorpMessengerBackend.Controllers
         public async Task<ActionResult<List<Message>>> Get(string token, long datetime)
         {
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == 0) return Unauthorized();
-
-            // todo admin things??
 
             var date = new DateTime(datetime);
+
+            if (userId != 0)
+                return Ok(await _db.Messages
+                    .Where(m =>
+                        m.Sent >= date
+                        && _db.UserChatLinks.Any(ucl =>
+                            ucl.UserId == userId
+                            && ucl.ChatId == m.ChatId))
+                    .ToListAsync());
             
-            return Ok( await _db.Messages
-                .Where(m => 
-                    m.Sent >= date
-                    && _db.UserChatLinks.Any(ucl => 
-                        ucl.UserId == userId 
-                        && ucl.ChatId == m.ChatId))
-                .ToListAsync() );
+
+            if (!_auth.CheckAdminAuth(_db, token)) 
+                return Unauthorized();
+
+            return Ok(await _db.Messages.Where(m => m.Sent >= date).ToListAsync() );
         }
 
         // get messages by datetime and chat
         [HttpGet]
         public async Task<ActionResult<List<Message>>> Get(string token, long datetime, long chatId)
         {
+            var date = new DateTime(datetime);
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == 0) return Unauthorized();
 
-            // todo admin things??
+            if (userId == 0) return Unauthorized();
 
             // есть ли юзер в чате
             if (!_db.UserChatLinks.Any(ucl => ucl.UserId == userId 
                                               && ucl.ChatId == chatId))
                 return BadRequest();
-
-            var date = new DateTime(datetime);
 
             return Ok(await _db.Messages
                 .Where(m => m.ChatId == chatId
