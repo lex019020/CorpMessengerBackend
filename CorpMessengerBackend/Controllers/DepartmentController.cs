@@ -37,16 +37,18 @@ namespace CorpMessengerBackend.Controllers
         [HttpGet]   // get list of departments
         public async Task<ActionResult<IEnumerable<Department>>> Get(string token)
         {
-            if (token != "123456")    // todo check for admin or user token
+            if (!_authService.CheckAdminAuth(_db, token) 
+                && _authService.CheckUserAuth(_db, token) == 0)
                 return Unauthorized();
 
             return Ok( await _db.Departments.ToArrayAsync() );
         }
 
-        [HttpGet]   // get department by id
+        [HttpGet("id")]   // get department by id
         public async Task<ActionResult<Department>> Get(string token, long depId)
         {
-            if (token != "123456")    // todo check for admin or user token
+            if (!_authService.CheckAdminAuth(_db, token)
+                && _authService.CheckUserAuth(_db, token) == 0)
                 return Unauthorized();
 
             if (!_db.Departments.Any(d => d.DepartmentId == depId))
@@ -59,7 +61,7 @@ namespace CorpMessengerBackend.Controllers
         [HttpPost]  // add department
         public async Task<ActionResult<Department>> Post(string token, Department department)
         {
-            if (token != "123456")    // todo check for admin or user token
+            if (!_authService.CheckAdminAuth(_db, token))
                 return Unauthorized();
 
             if (department == null)
@@ -77,7 +79,7 @@ namespace CorpMessengerBackend.Controllers
         [HttpPut]  // update department
         public async Task<ActionResult<Department>> Put(string token, Department department)
         {
-            if (token != "123456")    // todo check for admin or user token
+            if (!_authService.CheckAdminAuth(_db, token))
                 return Unauthorized();
 
             if (department == null)

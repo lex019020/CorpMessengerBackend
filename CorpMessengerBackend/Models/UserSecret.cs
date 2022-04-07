@@ -10,6 +10,10 @@ namespace CorpMessengerBackend.Models
     public class UserSecret
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public long Id { get; set; }
+
+        [Required]
         public long UserId { get; set; }
 
         [Required]

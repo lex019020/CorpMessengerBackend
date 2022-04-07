@@ -48,7 +48,7 @@ namespace CorpMessengerBackend.Controllers
         }
 
         // get messages by datetime and chat
-        [HttpGet]
+        [HttpGet("chat")]
         public async Task<ActionResult<List<Message>>> Get(string token, long datetime, long chatId)
         {
             var date = new DateTime(datetime);

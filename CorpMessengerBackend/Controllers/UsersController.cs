@@ -29,15 +29,19 @@ namespace CorpMessengerBackend.Controllers
             {
                 var basicUser = _db.Users.Add(new User()
                 {
-                    DepartmentId = 0, FirstName = "Admin", Modified = DateTime.Now,
-                    Patronymic = "Adminovich", SecondName = "Adminov",
-                    Email = "admin@admin.com"
-                }).Entity;
+                    DepartmentId = _db.Departments.First().DepartmentId, 
+                    FirstName = "Admin", 
+                    Patronymic = "Adminovich", 
+                    SecondName = "Adminov",
+                    Email = "admin@admin.com",
+                    Modified = DateTime.Now
+                });
 
+                _db.SaveChanges();
 
                 _db.UserSecrets.Add(new UserSecret()
                 {
-                    UserId = basicUser.UserId,
+                    UserId = basicUser.Entity.UserId,
                     Secret = CryptographyService.HashPassword("qwerty123456")
                 });
             }
@@ -92,6 +96,9 @@ namespace CorpMessengerBackend.Controllers
                 // todo log
                 return BadRequest(e.Message);
             }
+
+
+            await _db.SaveChangesAsync();
 
             if (user.UserId == 0)
                 return BadRequest();

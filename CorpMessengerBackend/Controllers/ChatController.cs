@@ -42,10 +42,11 @@ namespace CorpMessengerBackend.Controllers
                 return Ok(retList);
             }
 
+            var links = await _db.UserChatLinks
+                .Where(ucl => ucl.UserId == userId).ToListAsync();
+
             // собираем список чатов
-            retList.AddRange(_db.UserChatLinks
-                .Where(ucl => ucl.UserId == userId)
-                .Select(ucl => GetInfoById(ucl.UserId)));
+            links.ForEach(ucl => retList.Add(GetInfoById(ucl.UserId)));
 
             if (retList.Contains(null)) return BadRequest();
 
@@ -107,17 +108,19 @@ namespace CorpMessengerBackend.Controllers
             // создать чат
             var newCh =_db.Chats.Add(new Chat
             {
-                ChatName = chatInfo.ChatName, 
+                ChatName = chatInfo.ChatName ?? "", 
                 IsPersonal = chatInfo.IsPersonal, 
                 Modified = DateTime.Now
-            }).Entity;
+            });
+
+            await _db.SaveChangesAsync();
 
             // создать связи
             foreach (var uid in userList)
             {
                 await _db.UserChatLinks.AddAsync(new UserChatLink
                 {
-                    ChatId = newCh.ChatId,
+                    ChatId = newCh.Entity.ChatId,
                     Notifications = true,
                     UserId = uid
                 });
@@ -125,7 +128,7 @@ namespace CorpMessengerBackend.Controllers
             
             await _db.SaveChangesAsync();
 
-            return Ok(newCh.ChatId);
+            return Ok(newCh.Entity);
         }
 
         // change chat something

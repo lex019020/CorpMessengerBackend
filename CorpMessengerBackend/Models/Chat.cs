@@ -13,10 +13,10 @@ namespace CorpMessengerBackend.Models
         [DatabaseGenerated(System.ComponentModel.DataAnnotations.Schema.DatabaseGeneratedOption.Identity)]
         public long ChatId { get; set; }
 
-        [Required]
         [StringLength(255)]
-        public string ChatName { get; set; }
+        public string? ChatName { get; set; }
         
+        [Required]
         public bool IsPersonal { get; set; }
 
         public DateTime Modified { get; set; }

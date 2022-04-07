@@ -30,8 +30,7 @@ namespace CorpMessengerBackend.Models
         public DateTime Modified { get; set; }
         public bool Deleted { get; set; }
 
-
         [ForeignKey("DepartmentId")]
-        public virtual Department Department { get; set; }
+        public virtual Department? Department { get; set; }
     }
 }

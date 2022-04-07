@@ -22,5 +22,12 @@ namespace CorpMessengerBackend.Models
         {
             Database.EnsureCreated();
         }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            builder.Entity<UserSecret>()
+                .HasIndex(u => u.UserId)
+                .IsUnique();
+        }
     }
 }

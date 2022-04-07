@@ -36,7 +36,7 @@ namespace CorpMessengerBackend.Controllers
         public async Task<ActionResult<Credentials>> Post(Credentials credentials)
         {
             if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
-                return BadRequest(new Credentials());
+                return BadRequest();
 
             var auth = await _authService.SignInEmail(_db, credentials);
 
@@ -58,12 +58,12 @@ namespace CorpMessengerBackend.Controllers
             return Ok( ret );
         }
 
-        [HttpPost] // renew user auth
-        [Route("api/[controller]/renew")]
+        [HttpPost("renew")] // renew user auth
+        //[Route("api/[controller]/renew")]
         public async Task<ActionResult<Credentials>> UpdateAuth(Credentials credentials)
         {
-            if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
-                return BadRequest(new Credentials());
+            if (credentials.DeviceId == "" || credentials.Token == "")
+                return BadRequest();
 
             var auth = await _authService.RenewAuth(_db, credentials);
 
