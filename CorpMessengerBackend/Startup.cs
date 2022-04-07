@@ -5,9 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using CorpMessengerBackend.Models;
 using CorpMessengerBackend.Services;
-using Firebase.Auth;
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 

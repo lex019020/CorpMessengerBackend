@@ -85,7 +85,7 @@ namespace CorpMessengerBackend.Controllers
 
             try
             {
-                user = _db.Users.Add(user).Entity;
+                user = (await _db.Users.AddAsync(user)).Entity;
             }
             catch (Exception e)
             {

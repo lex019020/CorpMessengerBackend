@@ -18,16 +18,16 @@ namespace CorpMessengerBackend.Services
         /// <param name="credentials"></param>
         /// <returns>Auth object</returns>
         /// <exception cref="UnauthorizedAccessException"></exception>
-        public Auth SignInEmail(AppDataContext context, Credentials credentials);
+        public Task<Auth> SignInEmail(AppDataContext context, Credentials credentials);
 
-        public bool SignOut(AppDataContext context, Credentials credentials);
+        public Task<bool> SignOut(AppDataContext context, Credentials credentials);
 
         /// <summary>
         /// Full sign-out
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public bool SignOutFull(AppDataContext context, long userId);
+        public Task<bool> SignOutFull(AppDataContext context, long userId);
 
         /// <summary>
         /// Check if user is logged in
@@ -48,6 +48,6 @@ namespace CorpMessengerBackend.Services
         /// </summary>
         /// <param name="credentials"></param>
         /// <returns></returns>
-        public Auth RenewAuth(AppDataContext context, Credentials credentials);
+        public Task<Auth> RenewAuth(AppDataContext context, Credentials credentials);
     }
 }

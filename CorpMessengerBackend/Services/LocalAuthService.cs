@@ -17,7 +17,7 @@ namespace CorpMessengerBackend.Services
 
         // todo DeviceId!!
 
-        public Auth SignInEmail(AppDataContext context, Credentials credentials)
+        public async Task<Auth> SignInEmail(AppDataContext context, Credentials credentials)
         {
             var user = context.Users.FirstOrDefault(u => u.Email == credentials.Email);
 
@@ -34,37 +34,37 @@ namespace CorpMessengerBackend.Services
                 throw new Exception("No secret found for user!");
             }
 
-            if (CryptographyService.HashPassword(credentials.Password) != secret)
+            if (!CryptographyService.CheckPassword(credentials.Password, secret))
                 throw new UnauthorizedAccessException("Incorrect password");
 
             var newToken = CryptographyService.GenerateNewToken();
 
-            var newAuth = context.Auths.Add(new Auth
+            var newAuth = (await context.Auths.AddAsync(new Auth
             {
                 AuthToken = newToken, 
                 DeviceId = credentials.DeviceId, 
                 UserId = user.UserId,
                 Modified = DateTime.Now
-            }).Entity;
+            })).Entity;
 
-            context.SaveChanges();
+            await context.SaveChangesAsync();
 
             return newAuth;
         }
 
-        public bool SignOut(AppDataContext context, Credentials credentials)
+        public async Task<bool> SignOut(AppDataContext context, Credentials credentials)
         {
             var authToDel = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token);
 
             if (authToDel == null) return false;
 
             context.Auths.Remove(authToDel);
-            context.SaveChanges();
+            await context.SaveChangesAsync();
 
             return true;
         }
 
-        public bool SignOutFull(AppDataContext context, long userId)
+        public async Task<bool> SignOutFull(AppDataContext context, long userId)
         {
             var authToDel = context.Auths.FirstOrDefault(a => a.UserId == userId);
 
@@ -77,7 +77,7 @@ namespace CorpMessengerBackend.Services
                 authToDel = context.Auths.FirstOrDefault(a => a.UserId == userId);
             } while (authToDel != null);
 
-            context.SaveChanges();
+            await context.SaveChangesAsync();
 
             return true;
         }
@@ -106,7 +106,7 @@ namespace CorpMessengerBackend.Services
             return token == a.Token;
         }
 
-        public Auth RenewAuth(AppDataContext context, Credentials credentials)
+        public async Task<Auth> RenewAuth(AppDataContext context, Credentials credentials)
         {
             var auth = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token 
                                                          && a.DeviceId == credentials.DeviceId);
@@ -119,6 +119,8 @@ namespace CorpMessengerBackend.Services
             auth.Modified = DateTime.Now;
 
             context.Auths.Update(auth);
+
+            await context.SaveChangesAsync();
 
             return auth;
         }

@@ -30,24 +30,24 @@ namespace CorpMessengerBackend.Controllers
         {
             // проверить что польз авторизован
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == 0) return Unauthorized();
+            var isAdmin = _auth.CheckAdminAuth(_db, token);
+            if (userId == 0 && !isAdmin) return Unauthorized();
 
             var retList = new List<ChatInfo>();
 
-            // todo async
-            // собираем список чатов
-            foreach (var userChatLink in _db.UserChatLinks.Where( 
-                ucl => ucl.UserId == userId))
+            if (isAdmin)
             {
-                var chatInfo = GetInfoById(userChatLink.ChatId);
+                retList.AddRange(_db.Chats.Select(c => GetInfoById(c.ChatId)));
 
-                if (chatInfo == null)
-                    return BadRequest();
-
-                retList.Add(chatInfo);
+                return Ok(retList);
             }
 
-            // todo get all chats (admin)
+            // собираем список чатов
+            retList.AddRange(_db.UserChatLinks
+                .Where(ucl => ucl.UserId == userId)
+                .Select(ucl => GetInfoById(ucl.UserId)));
+
+            if (retList.Contains(null)) return BadRequest();
 
             return Ok(retList);
         }
@@ -57,14 +57,16 @@ namespace CorpMessengerBackend.Controllers
         {
             // проверить что польз авторизован
             var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == 0) return Unauthorized();
+            var isAdmin = _auth.CheckAdminAuth(_db, token); 
+            if (userId == 0 && !isAdmin) return Unauthorized();
 
-            // todo admin thing
-
-            // проверка что пользователь есть в чате
-            if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chatId 
-                                              && ucl.UserId == userId))
-                return BadRequest();
+            if (!isAdmin)
+            {
+                // проверка что пользователь есть в чате
+                if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chatId
+                                                  && ucl.UserId == userId))
+                    return BadRequest();
+            }
 
             var ci = GetInfoById(chatId);
 

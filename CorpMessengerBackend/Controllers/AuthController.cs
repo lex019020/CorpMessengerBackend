@@ -38,7 +38,7 @@ namespace CorpMessengerBackend.Controllers
             if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
                 return BadRequest(new Credentials());
 
-            var auth = _authService.SignInEmail(_db, credentials);
+            var auth = await _authService.SignInEmail(_db, credentials);
 
             if (auth == null || auth.AuthToken == "") return Unauthorized();
 
@@ -65,7 +65,7 @@ namespace CorpMessengerBackend.Controllers
             if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
                 return BadRequest(new Credentials());
 
-            var auth = _authService.RenewAuth(_db, credentials);
+            var auth = await _authService.RenewAuth(_db, credentials);
 
             if (auth == null || auth.AuthToken == "") return Unauthorized();
 
@@ -73,24 +73,5 @@ namespace CorpMessengerBackend.Controllers
 
             return Ok(credentials);
         }
-
-        /*[Route("api/[controller]/refresh")]
-        [HttpPost] // user renew auth 
-        public async Task<ActionResult<Credentials>> Post(Credentials credentials)
-        {
-            if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
-                return BadRequest(new Credentials());
-
-            var auth = _authService.SignInEmail(credentials);
-
-            if (auth.AuthToken == "") return Unauthorized();
-
-            await _db.Auths.AddAsync(auth);
-            await _db.SaveChangesAsync();
-
-            credentials.Token = auth.AuthToken;
-
-            return Ok(credentials);
-        }*/
     }
 }

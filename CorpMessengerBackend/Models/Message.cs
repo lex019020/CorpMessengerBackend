@@ -34,5 +34,5 @@ namespace CorpMessengerBackend.Models
         [ForeignKey("UserId")]
         public virtual User User { get; set; }
 
-}
+    }
 }
