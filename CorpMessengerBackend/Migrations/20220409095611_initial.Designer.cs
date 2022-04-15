@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CorpMessengerBackend.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20220407163618_amogus")]
-    partial class amogus
+    [Migration("20220409095611_initial")]
+    partial class initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

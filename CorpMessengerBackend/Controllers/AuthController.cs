@@ -24,12 +24,12 @@ namespace CorpMessengerBackend.Controllers
         }
 
         [HttpGet] // check user auth
-        public async Task<ActionResult<bool>> Get(Credentials credentials)
+        public async Task<ActionResult<long>> Get(Credentials credentials)
         {
             if (credentials.DeviceId == "" || credentials.Token == "")
-                return BadRequest(false);
+                return BadRequest(0);
 
-            return _authService.CheckUserAuth(_db, credentials.Token) != 0;
+            return _authService.CheckUserAuth(_db, credentials.Token);
         }
 
         [HttpPost] // user auth

@@ -18,12 +18,12 @@ namespace CorpMessengerBackend.Models
         [Required]
         public long ChatId { get; set; }
 
-        public long UserId { get; set; }
+        public long? UserId { get; set; }
 
         [Required]
         public string Text { get; set; }
 
-        public long AttachmentId { get; set; }
+        public long? AttachmentId { get; set; }
 
         [Required]
         public DateTime Sent { get; set; }
@@ -32,7 +32,7 @@ namespace CorpMessengerBackend.Models
         public virtual Chat Chat { get; set; }
 
         [ForeignKey("UserId")]
-        public virtual User User { get; set; }
+        public virtual User? User { get; set; }
 
     }
 }

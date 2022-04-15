@@ -15,7 +15,7 @@ namespace CorpMessengerBackend.Services
         {
         }
 
-        // todo DeviceId!!
+        // !!!!!!!!!!!!! todo DeviceId !!!!!!!!!!!!!!
 
         public async Task<Auth> SignInEmail(AppDataContext context, Credentials credentials)
         {
@@ -35,7 +35,7 @@ namespace CorpMessengerBackend.Services
             }
 
             if (!CryptographyService.CheckPassword(credentials.Password, secret))
-                throw new UnauthorizedAccessException("Incorrect password");
+                throw new UnauthorizedAccessException("Incorrect password");    // todo return "";
 
             var newToken = CryptographyService.GenerateNewToken();
 

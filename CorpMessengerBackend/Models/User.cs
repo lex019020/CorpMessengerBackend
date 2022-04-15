@@ -21,7 +21,7 @@ namespace CorpMessengerBackend.Models
         public string SecondName { get; set; }
 
         [StringLength(50)]
-        public string Patronymic { get; set; }
+        public string? Patronymic { get; set; }
 
         [StringLength(255)]
         [RegularExpression(@"\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*")]

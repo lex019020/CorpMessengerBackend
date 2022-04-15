@@ -70,6 +70,8 @@ namespace CorpMessengerBackend.Controllers
             if (_db.Departments.Any(d => d.DepartmentId == department.DepartmentId))
                 return BadRequest();
 
+            department.Modified = DateTime.UtcNow;
+
             var res = _db.Departments.Add(department);
             await _db.SaveChangesAsync();
 
@@ -88,28 +90,12 @@ namespace CorpMessengerBackend.Controllers
             if (!_db.Departments.Any(d => d.DepartmentId == department.DepartmentId))
                 return BadRequest();
 
+            department.Modified = DateTime.UtcNow;
 
             var res = _db.Update(department);
             await _db.SaveChangesAsync();
 
             return Ok(res.Entity);
         }
-
-        /*[HttpDelete]  // delete department todo надо ли вообще?
-        public async Task<ActionResult<Department>> Delete(string token, long depId)
-        {
-            if (token != "123456")    // todo check for admin or user token
-                return Unauthorized();
-
-            var department = _db.Departments.FirstOrDefault(d => d.DepartmentId == depId);
-
-            if (department == null)
-                return BadRequest();
-
-            var res = _db.Departments.Remove(department);
-            await _db.SaveChangesAsync();
-
-            return Ok(res.Entity);
-        }*/
     }
 }
