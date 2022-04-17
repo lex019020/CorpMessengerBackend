@@ -50,7 +50,8 @@ namespace CorpMessengerBackend.Controllers
 
         // get messages by datetime and chat
         [HttpGet("chat")]
-        public async Task<ActionResult<List<Message>>> Get(string token, DateTime dateAfter, long chatId)
+        public async Task<ActionResult<List<Message>>> Get(string token, DateTime dateAfter, 
+            DateTime? dateBefore, long chatId)
         {
             //var date = new DateTime(datetime);
             var userId = _auth.CheckUserAuth(_db, token);
@@ -64,11 +65,12 @@ namespace CorpMessengerBackend.Controllers
 
             return Ok(await _db.Messages
                 .Where(m => m.ChatId == chatId
-                            && m.Sent >= dateAfter)
+                            && m.Sent >= dateAfter
+                            && (dateBefore == null || m.Sent <= dateBefore))
                 .ToListAsync());
         }
 
-        // todo send message
+        // send message
         [HttpPost]
         public async Task<ActionResult<Message>> Post(string token, long chatId, string text)
         {

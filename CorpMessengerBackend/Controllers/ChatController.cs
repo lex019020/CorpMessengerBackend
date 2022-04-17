@@ -46,7 +46,7 @@ namespace CorpMessengerBackend.Controllers
                 .Where(ucl => ucl.UserId == userId).ToListAsync();
 
             // собираем список чатов
-            links.ForEach(ucl => retList.Add(GetInfoById(ucl.UserId)));
+            links.ForEach(ucl => retList.Add(GetInfoById(ucl.ChatId)));
 
             if (retList.Contains(null)) return BadRequest();
 
@@ -161,7 +161,7 @@ namespace CorpMessengerBackend.Controllers
         }
 
         // add user to chat
-        [HttpPost]
+        [HttpPost("addUser")]
         [Route("api/[controller]/addUser")]
         public async Task<ActionResult<bool>> AddUser(string token, long chatId, long userToAdd)
         {
