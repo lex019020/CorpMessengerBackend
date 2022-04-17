@@ -35,7 +35,7 @@ namespace CorpMessengerBackend.Services
             }
 
             if (!CryptographyService.CheckPassword(credentials.Password, secret))
-                throw new UnauthorizedAccessException("Incorrect password");    // todo return "";
+                return new Auth();
 
             var newToken = CryptographyService.GenerateNewToken();
 
@@ -44,7 +44,7 @@ namespace CorpMessengerBackend.Services
                 AuthToken = newToken, 
                 DeviceId = credentials.DeviceId, 
                 UserId = user.UserId,
-                Modified = DateTime.Now
+                Modified = DateTime.UtcNow
             })).Entity;
 
             await context.SaveChangesAsync();
@@ -87,8 +87,8 @@ namespace CorpMessengerBackend.Services
             var auth = context.Auths.FirstOrDefault(a => a.AuthToken == token);
 
             if (auth == null
-                ||auth.Modified.AddDays(7) < DateTime.Now
-                ||!context.Users.Any(u => u.UserId == auth.UserId && !u.Deleted)) 
+                ||auth.Modified.AddDays(7) < DateTime.UtcNow
+                || !context.Users.Any(u => u.UserId == auth.UserId && !u.Deleted)) 
                 return 0;
             
             return auth.UserId;
@@ -116,7 +116,7 @@ namespace CorpMessengerBackend.Services
                 return null;
 
             auth.AuthToken = CryptographyService.GenerateNewToken();
-            auth.Modified = DateTime.Now;
+            auth.Modified = DateTime.UtcNow;
 
             context.Auths.Update(auth);
 

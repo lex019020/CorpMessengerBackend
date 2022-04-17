@@ -34,7 +34,7 @@ namespace CorpMessengerBackend.Controllers
                     Patronymic = "Adminovich", 
                     SecondName = "Adminov",
                     Email = "admin@admin.com",
-                    Modified = DateTime.Now
+                    Modified = DateTime.UtcNow
                 });
 
                 _db.SaveChanges();
@@ -85,7 +85,7 @@ namespace CorpMessengerBackend.Controllers
             }
 
             user.Deleted = false;
-            user.Modified = DateTime.Now;
+            user.Modified = DateTime.UtcNow;
 
             try
             {
@@ -132,7 +132,7 @@ namespace CorpMessengerBackend.Controllers
 
             //// todo change pwd somehow
 
-            user.Modified = DateTime.Now;
+            user.Modified = DateTime.UtcNow;
 
             _db.Update(user);
             await _db.SaveChangesAsync();
@@ -153,6 +153,7 @@ namespace CorpMessengerBackend.Controllers
             }
 
             user.Deleted = true;
+            user.Modified = DateTime.UtcNow;
             _db.Users.Update(user);
 
             await _db.SaveChangesAsync();

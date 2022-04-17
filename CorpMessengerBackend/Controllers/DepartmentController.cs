@@ -27,7 +27,7 @@ namespace CorpMessengerBackend.Controllers
                 _db.Departments.Add(new Department
                 {
                     DepartmentName = "Based department",
-                    Modified = DateTime.Now
+                    Modified = DateTime.UtcNow
                 });
 
                 _db.SaveChangesAsync();

@@ -110,7 +110,7 @@ namespace CorpMessengerBackend.Controllers
             {
                 ChatName = chatInfo.ChatName ?? "", 
                 IsPersonal = chatInfo.IsPersonal, 
-                Modified = DateTime.Now
+                Modified = DateTime.UtcNow
             });
 
             await _db.SaveChangesAsync();
@@ -152,7 +152,7 @@ namespace CorpMessengerBackend.Controllers
                 return BadRequest();
 
             chat.ChatName = newChat.ChatName;
-            chat.Modified = DateTime.Now;
+            chat.Modified = DateTime.UtcNow;
 
             var ret = _db.Chats.Update(chat);
             await _db.SaveChangesAsync();
