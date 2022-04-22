@@ -162,7 +162,6 @@ namespace CorpMessengerBackend.Controllers
 
         // add user to chat
         [HttpPost("addUser")]
-        [Route("api/[controller]/addUser")]
         public async Task<ActionResult<bool>> AddUser(string token, long chatId, long userToAdd)
         {
             var userId = _auth.CheckUserAuth(_db, token);
@@ -203,8 +202,7 @@ namespace CorpMessengerBackend.Controllers
         }
 
         // kick user
-        [HttpPost]
-        [Route("api/[controller]/kickUser")]
+        [HttpPost("kickUser")]
         public async Task<ActionResult<bool>> KickUser(string token, long chatId, long userToKick)
         {
             var userId = _auth.CheckUserAuth(_db, token);
