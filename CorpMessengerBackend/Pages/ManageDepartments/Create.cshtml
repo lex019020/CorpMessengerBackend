@@ -1,0 +1,34 @@
+﻿@page
+@model CorpMessengerBackend.Pages.ManageDepartments.CreateModel
+
+@{
+    ViewData["Title"] = "Создание отдела";
+}
+
+<h1>Создание</h1>
+
+<h4>Отдел</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Department.DepartmentName" class="control-label"></label>
+                <input asp-for="Department.DepartmentName" class="form-control" />
+                <span asp-validation-for="Department.DepartmentName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Создать" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Назад к списку</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

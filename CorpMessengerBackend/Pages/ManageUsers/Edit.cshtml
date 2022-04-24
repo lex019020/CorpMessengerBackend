@@ -1,0 +1,65 @@
+﻿@page
+@model CorpMessengerBackend.Pages.ManageUsers.EditModel
+
+@{
+    ViewData["Title"] = "Редактирование пользователя";
+}
+
+<h1>Редактирование</h1>
+
+<h4>Пользователь</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="User.UserId" />
+            <div class="form-group">
+                <label asp-for="User.DepartmentId" class="control-label"></label>
+                <select asp-for="User.DepartmentId" class="form-control" asp-items="ViewBag.DepartmentId"></select>
+                <span asp-validation-for="User.DepartmentId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="User.FirstName" class="control-label"></label>
+                <input asp-for="User.FirstName" class="form-control" />
+                <span asp-validation-for="User.FirstName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="User.SecondName" class="control-label"></label>
+                <input asp-for="User.SecondName" class="form-control" />
+                <span asp-validation-for="User.SecondName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="User.Patronymic" class="control-label"></label>
+                <input asp-for="User.Patronymic" class="form-control" />
+                <span asp-validation-for="User.Patronymic" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="User.Email" class="control-label"></label>
+                <input asp-for="User.Email" class="form-control" />
+                <span asp-validation-for="User.Email" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="NewPassword" class="control-label">Новый пароль</label>
+                <input type=password asp-for="NewPassword" class="form-control" />
+                @*<span asp-validation-for="User.Email" class="text-danger"></span>*@
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="User.Deleted" /> @Html.DisplayNameFor(model => model.User.Deleted)
+                </label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Сохранить" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="./Index">Назад к списку</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

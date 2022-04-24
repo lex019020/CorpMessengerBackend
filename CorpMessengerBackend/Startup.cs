@@ -27,6 +27,8 @@ namespace CorpMessengerBackend
 
             services.AddControllers();
 
+            services.AddRazorPages();
+
             services.AddSingleton<IAuthService, LocalAuthService>();
         }
 
@@ -38,10 +40,13 @@ namespace CorpMessengerBackend
             }
 
             app.UseRouting();
+            app.UseStaticFiles();
+            app.UseDefaultFiles();
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapRazorPages();
             });
         }
     }
