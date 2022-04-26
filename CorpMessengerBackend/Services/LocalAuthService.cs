@@ -99,7 +99,6 @@ namespace CorpMessengerBackend.Services
             var a = context.AdminAuths.FirstOrDefault();
             if (a == null)
             {
-                // todo log
                 return false;
             }
 

@@ -57,7 +57,7 @@ namespace CorpMessengerBackend.Pages.ManageUsers
 
             if (newPassword != null && newPassword.Length > 7)
             {
-                var secret = _context.UserSecrets.Find(User.UserId);
+                var secret = _context.UserSecrets.First(s => s.UserId == User.UserId);
                 if (secret == null)
                 {
                     _context.UserSecrets.Add(new UserSecret { 
