@@ -1,266 +1,255 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CorpMessengerBackend.HttpObjects;
 using CorpMessengerBackend.Models;
 using CorpMessengerBackend.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace CorpMessengerBackend.Controllers
+namespace CorpMessengerBackend.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class ChatController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ChatController : ControllerBase
+    private readonly IAuthService _authService;
+    private readonly IAppDataContext _db;
+
+    public ChatController(IAuthService authService, IAppDataContext dataContext)
     {
-        private readonly IAuthService _auth;
-        private readonly AppDataContext _db;
+        _authService = authService;
+        _db = dataContext;
+    }
 
-        public ChatController(IAuthService authService, AppDataContext dataContext)
+    // get user chats
+    [HttpGet]
+    public async Task<ActionResult<List<ChatInfo>>> Get(string token)
+    {
+        // проверить что польз авторизован
+        var userId = _authService.CheckUserAuth(_db, token);
+        var isAdmin = _authService.CheckAdminAuth(_db, token);
+        if (userId == 0 && !isAdmin) return Unauthorized();
+
+        var userChatsList = new List<ChatInfo?>();
+
+        if (isAdmin)
         {
-            _auth = authService;
-            _db = dataContext;
+            userChatsList.AddRange(_db.Chats.Select(c => GetInfoById(c.ChatId)));
+
+            return Ok(userChatsList);
         }
 
-        // get user chats
-        [HttpGet]
-        public async Task<ActionResult<List<ChatInfo>>> Get(string token)
-        {
-            // проверить что польз авторизован
-            var userId = _auth.CheckUserAuth(_db, token);
-            var isAdmin = _auth.CheckAdminAuth(_db, token);
-            if (userId == 0 && !isAdmin) return Unauthorized();
+        var chatLinks = await _db.UserChatLinks
+            .Where(ucl => ucl.UserId == userId).ToListAsync();
 
-            var retList = new List<ChatInfo>();
+        // собираем список чатов
+        chatLinks.ForEach(ucl => userChatsList.Add(GetInfoById(ucl.ChatId)));
 
-            if (isAdmin)
-            {
-                retList.AddRange(_db.Chats.Select(c => GetInfoById(c.ChatId)));
+        if (userChatsList.Contains(null)) return BadRequest();
 
-                return Ok(retList);
-            }
+        return Ok(userChatsList);
+    }
 
-            var links = await _db.UserChatLinks
-                .Where(ucl => ucl.UserId == userId).ToListAsync();
+    // get single chat info
+    public Task<ActionResult<ChatInfo>> Get(string token, long chatId)
+    {
+        // проверить что польз авторизован
+        var userId = _authService.CheckUserAuth(_db, token);
+        var isAdmin = _authService.CheckAdminAuth(_db, token);
+        if (userId == 0 && !isAdmin) return Task.FromResult<ActionResult<ChatInfo>>(Unauthorized());
 
-            // собираем список чатов
-            links.ForEach(ucl => retList.Add(GetInfoById(ucl.ChatId)));
+        if (!isAdmin)
+            // проверка что пользователь есть в чате
+            if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chatId
+                                              && ucl.UserId == userId))
+                return Task.FromResult<ActionResult<ChatInfo>>(BadRequest());
 
-            if (retList.Contains(null)) return BadRequest();
+        var chatInfo = GetInfoById(chatId);
 
-            return Ok(retList);
-        }
+        return Task.FromResult<ActionResult<ChatInfo>>(chatInfo == null
+            ? NotFound()
+            : Ok(chatInfo));
+    }
 
-        // get single chat info
-        public async Task<ActionResult<ChatInfo>> Get(string token, long chatId)
-        {
-            // проверить что польз авторизован
-            var userId = _auth.CheckUserAuth(_db, token);
-            var isAdmin = _auth.CheckAdminAuth(_db, token); 
-            if (userId == 0 && !isAdmin) return Unauthorized();
+    // create new chat
+    [HttpPost]
+    public async Task<ActionResult<long>> Post(string token, ChatInfo chatInfo)
+    {
+        // проверить что польз авторизован
+        var userId = _authService.CheckUserAuth(_db, token);
+        if (userId == 0) return Unauthorized();
 
-            if (!isAdmin)
-            {
-                // проверка что пользователь есть в чате
-                if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chatId
-                                                  && ucl.UserId == userId))
-                    return BadRequest();
-            }
+        // проверить что он в списке
+        var userList = chatInfo.Users;
+        if (!userList.Contains(userId))
+            return BadRequest();
 
-            var ci = GetInfoById(chatId);
+        // проверить корректность списка
+        if (userList.Any(uid => !_db.Users.Any(us => us.UserId == uid && !us.Deleted))) return BadRequest();
 
-            return ci == null 
-                ? NotFound() 
-                : Ok(ci);
-        }
+        // проверить корректна ли галка
+        if (userList.Count == 2 != chatInfo.IsPersonal)
+            return BadRequest();
 
-        // create new chat
-        [HttpPost]
-        public async Task<ActionResult<long>> Post(string token, ChatInfo chatInfo)
-        {
-            // проверить что польз авторизован
-            var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == 0) return Unauthorized();
-
-            // проверить что он в списке
-            var userList = chatInfo.Users;
-            if (!userList.Contains(userId))
-                return BadRequest();
-
-            // проверить корректность списка
-            if (userList.Any(uid => !_db.Users.Any(us => us.UserId == uid && !us.Deleted)))
-            {
-                return BadRequest();
-            }
-
-            // проверить корректна ли галка
-            if ((userList.Count == 2) != chatInfo.IsPersonal)
-                return BadRequest();
-
-            // если персональный - запретить если есть дубликат
-            if (chatInfo.IsPersonal && _db.Chats.Any(ch => ch.IsPersonal && _db.UserChatLinks.Where(
+        // если персональный - запретить если есть дубликат
+        if (chatInfo.IsPersonal && _db.Chats.Any(ch => ch.IsPersonal && _db.UserChatLinks.Where(
                 ucl => ucl.ChatId == ch.ChatId).All(
                 ucl => chatInfo.Users.Contains(ucl.UserId))))
-                return BadRequest();
+            return BadRequest();
 
-            // создать чат
-            var newCh =_db.Chats.Add(new Chat
-            {
-                ChatName = chatInfo.ChatName ?? "", 
-                IsPersonal = chatInfo.IsPersonal, 
-                Modified = DateTime.UtcNow
-            });
-
-            await _db.SaveChangesAsync();
-
-            // создать связи
-            foreach (var uid in userList)
-            {
-                await _db.UserChatLinks.AddAsync(new UserChatLink
-                {
-                    ChatId = newCh.Entity.ChatId,
-                    Notifications = true,
-                    UserId = uid
-                });
-            }
-            
-            await _db.SaveChangesAsync();
-
-            return Ok(newCh.Entity);
-        }
-
-        // change chat something
-        [HttpPut]
-        public async Task<ActionResult<Chat>> Put(string token, Chat newChat)
+        // создать чат
+        var newChat = _db.Chats.Add(new Chat
         {
-            // проверить что польз авторизован
-            var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == 0) return Unauthorized();
+            ChatName = chatInfo.ChatName ?? "",
+            IsPersonal = chatInfo.IsPersonal,
+            Modified = DateTime.UtcNow
+        });
 
-            // todo admin thing
+        await _db.SaveChangesAsync();
 
-            // проверка существования чата
-            var chat = _db.Chats.FirstOrDefault(ch => ch.ChatId == newChat.ChatId);
-            if (chat == null)
-                return BadRequest();
-
-            // проверка что пользователь есть в чате
-            if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
-                                              && ucl.UserId == userId))
-                return BadRequest();
-
-            chat.ChatName = newChat.ChatName;
-            chat.Modified = DateTime.UtcNow;
-
-            var ret = _db.Chats.Update(chat);
-            await _db.SaveChangesAsync();
-
-            return ret.Entity;
-        }
-
-        // add user to chat
-        [HttpPost("addUser")]
-        public async Task<ActionResult<bool>> AddUser(string token, long chatId, long userToAdd)
-        {
-            var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == 0) return Unauthorized();
-
-            // todo admin thing
-
-            // проверка существования чата
-            var chat = _db.Chats.FirstOrDefault(ch => ch.ChatId == chatId);
-            if (chat == null)
-                return BadRequest();
-
-            // проверка что пользователь есть в чате
-            if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
-                                              && ucl.UserId == userId))
-                return BadRequest();
-
-            // проверка второго пользователя на существование
-            if (!_db.Users.Any(u => u.UserId == userToAdd))
-                return BadRequest();
-
-            // проверка что его нет в чате
-            if (_db.UserChatLinks.Any(ucl => ucl.ChatId == chatId
-                                             && ucl.UserId == userToAdd))
-                return BadRequest();
-
-            // добавление
+        // создать связи
+        foreach (var uid in userList)
             await _db.UserChatLinks.AddAsync(new UserChatLink
             {
-                ChatId = chat.ChatId,
-                UserId = userToAdd,
-                Notifications = true
-            }).AsTask().ContinueWith(async _ => await _db.SaveChangesAsync());
+                ChatId = newChat.Entity.ChatId,
+                Notifications = true,
+                UserId = uid
+            });
 
-            // todo в чат системное сообщение
+        await _db.SaveChangesAsync();
 
-            return Ok(true);
-        }
+        return Ok(newChat.Entity);
+    }
 
-        // kick user
-        [HttpPost("kickUser")]
-        public async Task<ActionResult<bool>> KickUser(string token, long chatId, long userToKick)
+    // change chat something
+    [HttpPut]
+    public async Task<ActionResult<Chat>> Put(string token, Chat newChat)
+    {
+        // проверить что польз авторизован
+        var userId = _authService.CheckUserAuth(_db, token);
+        if (userId == 0) return Unauthorized();
+
+        // todo admin thing
+
+        // проверка существования чата
+        var chat = _db.Chats.FirstOrDefault(ch => ch.ChatId == newChat.ChatId);
+        if (chat == null)
+            return BadRequest();
+
+        // проверка что пользователь есть в чате
+        if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
+                                          && ucl.UserId == userId))
+            return BadRequest();
+
+        chat.ChatName = newChat.ChatName;
+        chat.Modified = DateTime.UtcNow;
+
+        var changedChat = _db.Chats.Update(chat);
+        await _db.SaveChangesAsync();
+
+        return changedChat.Entity;
+    }
+
+    // add user to chat
+    [HttpPost("addUser")]
+    public async Task<ActionResult<bool>> AddUser(string token, long chatId, long userToAdd)
+    {
+        var userId = _authService.CheckUserAuth(_db, token);
+        if (userId == 0) return Unauthorized();
+
+        // todo admin thing
+
+        // проверка существования чата
+        var chat = _db.Chats.FirstOrDefault(ch => ch.ChatId == chatId);
+        if (chat == null)
+            return BadRequest();
+
+        // проверка что пользователь есть в чате
+        if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
+                                          && ucl.UserId == userId))
+            return BadRequest();
+
+        // проверка второго пользователя на существование
+        if (!_db.Users.Any(u => u.UserId == userToAdd))
+            return BadRequest();
+
+        // проверка что его нет в чате
+        if (_db.UserChatLinks.Any(ucl => ucl.ChatId == chatId
+                                         && ucl.UserId == userToAdd))
+            return BadRequest();
+
+        // добавление
+        await _db.UserChatLinks.AddAsync(new UserChatLink
         {
-            var userId = _auth.CheckUserAuth(_db, token);
-            if (userId == 0) return Unauthorized();
+            ChatId = chat.ChatId,
+            UserId = userToAdd,
+            Notifications = true
+        }).AsTask().ContinueWith(async _ => await _db.SaveChangesAsync());
 
-            // todo admin thing
+        // todo в чат системное сообщение
 
-            // проверка существования чата
-            var chat = _db.Chats.FirstOrDefault(ch => ch.ChatId == chatId);
-            if (chat == null)
-                return BadRequest();
+        return Ok(true);
+    }
 
-            // проверка что пользователь есть в чате
-            if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
-                                              && ucl.UserId == userId))
-                return BadRequest();
+    // kick user
+    [HttpPost("kickUser")]
+    public async Task<ActionResult<bool>> KickUser(string token, long chatId, long userToKick)
+    {
+        var userId = _authService.CheckUserAuth(_db, token);
+        if (userId == 0) return Unauthorized();
 
-            // проверка второго пользователя на существование
-            if (!_db.Users.Any(u => u.UserId == userToKick))
-                return BadRequest();
+        // todo admin thing
 
-            // проверка что кикаемый есть в чате
-            var link = _db.UserChatLinks.FirstOrDefault(
-                ucl => ucl.ChatId == chatId && ucl.UserId == userToKick);
+        // проверка существования чата
+        var chat = _db.Chats.FirstOrDefault(ch => ch.ChatId == chatId);
+        if (chat == null)
+            return BadRequest();
 
-            if (link == null)
-                return BadRequest();
+        // проверка что пользователь есть в чате
+        if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
+                                          && ucl.UserId == userId))
+            return BadRequest();
 
-            // удаление
-            _db.UserChatLinks.Remove(link);
+        // проверка второго пользователя на существование
+        if (!_db.Users.Any(u => u.UserId == userToKick))
+            return BadRequest();
 
-            await _db.SaveChangesAsync();
+        // проверка что кикаемый есть в чате
+        var link = _db.UserChatLinks.FirstOrDefault(
+            ucl => ucl.ChatId == chatId && ucl.UserId == userToKick);
 
-            // todo в чат системное сообщение
+        if (link == null)
+            return BadRequest();
 
-            return Ok(true);
-        }
+        // удаление
+        _db.UserChatLinks.Remove(link);
 
-        private ChatInfo GetInfoById(long chatId)
-        {
-            var retInfo = new ChatInfo();
-            var chat = _db.Chats.FirstOrDefault(c => c.ChatId == chatId);
+        await _db.SaveChangesAsync();
 
-            if (chat == null) return null;
+        // todo в чат системное сообщение
 
-            retInfo.Users = new List<long>();
+        return Ok(true);
+    }
 
-            foreach (var userChatLink in _db.UserChatLinks
-                .Where(ucl => ucl.ChatId == chat.ChatId))
-            {
-                retInfo.Users.Add(userChatLink.UserId);
-            }
+    private ChatInfo? GetInfoById(long chatId)
+    {
+        var retInfo = new ChatInfo();
+        var chat = _db.Chats.FirstOrDefault(c => c.ChatId == chatId);
 
-            retInfo.ChatId = chat.ChatId;
-            retInfo.ChatName = chat.ChatName;
-            retInfo.IsPersonal = chat.IsPersonal;
+        if (chat == null) return null;
 
-            return retInfo;
-        }
+        retInfo.Users = new List<long>();
+
+        foreach (var userChatLink in _db.UserChatLinks
+                     .Where(ucl => ucl.ChatId == chat.ChatId))
+            retInfo.Users.Add(userChatLink.UserId);
+
+        retInfo.ChatId = chat.ChatId;
+        retInfo.ChatName = chat.ChatName;
+        retInfo.IsPersonal = chat.IsPersonal;
+
+        return retInfo;
     }
 }

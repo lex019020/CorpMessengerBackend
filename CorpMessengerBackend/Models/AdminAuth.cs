@@ -1,20 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace CorpMessengerBackend.Models
+namespace CorpMessengerBackend.Models;
+
+public class AdminAuth
 {
-    public class AdminAuth
-    {
-        [Key]
-        public long AdminAuthId { get; set; }
+    [Key] public long AdminAuthId { get; set; }
 
-        [Required]
-        public string Token { get; set; }
+    [Required] public string Token { get; set; }
 
-        [Required]
-        public long UserId { get; set; }
-    }
+    [Required] public long UserId { get; set; }
 }

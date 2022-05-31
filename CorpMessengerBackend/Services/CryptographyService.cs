@@ -3,74 +3,66 @@ using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
-namespace CorpMessengerBackend.Services
+namespace CorpMessengerBackend.Services;
+
+public class CryptographyService
 {
-    public class CryptographyService
+    private const string AllowableCharacters =
+        "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
+
+    public static string GenerateNewToken()
     {
-        private const string AllowableCharacters =
-            "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
+        var length = new Random(Environment.TickCount).Next(96, 128);
 
-        public static string GenerateNewToken()
+        var bytes = new byte[length];
+
+        using (var random = RandomNumberGenerator.Create())
         {
-            var length = new Random(Environment.TickCount).Next(96, 128);
-
-            var bytes = new byte[length];
-
-            using (var random = RandomNumberGenerator.Create())
-            {
-                random.GetBytes(bytes);
-            }
-
-            return new string(bytes.Select(x => AllowableCharacters[x % AllowableCharacters.Length]).ToArray());
+            random.GetBytes(bytes);
         }
 
-        public static string HashPassword(string password, byte[]? salt = null)
+        return new string(bytes.Select(x => AllowableCharacters[x % AllowableCharacters.Length]).ToArray());
+    }
+
+    public static string HashPassword(string password, byte[]? salt = null)
+    {
+        if (salt == null || salt.Length < 8)
         {
-            if (salt == null || salt.Length < 8)
-            {
-                // generate a 128-bit salt using a cryptographically strong random sequence of nonzero values
-                salt = new byte[128 / 8];
-
-                using (var rngCsp = new RNGCryptoServiceProvider())
-                {
-                    rngCsp.GetNonZeroBytes(salt);
-                } 
-            }
-
-            // derive a 256-bit subkey (use HMACSHA256 with 2,500 iterations)
-            var hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                password: password,
-                salt: salt,
-                prf: KeyDerivationPrf.HMACSHA256,
-                iterationCount: 250000,
-                numBytesRequested: 256 / 8));
-
-            var saltString = Convert.ToBase64String(salt);
-
-            return saltString + ":" + hashed;
+            // generate a 128-bit salt using a cryptographically strong random sequence of nonzero values
+            salt = RandomNumberGenerator.GetBytes(128/8);
         }
 
-        public static bool CheckPassword(string password, string secret)
-        {
-            if (string.IsNullOrEmpty(password))
-                return false;
+        // derive a 256-bit subkey (use HMACSHA256 with 250,000 iterations)
+        var hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+            password,
+            salt,
+            KeyDerivationPrf.HMACSHA256,
+            250000,
+            256 / 8));
 
-            if (string.IsNullOrEmpty(secret))
-                return false;
+        var saltString = Convert.ToBase64String(salt);
 
-            var secretData = secret.Split(':');
+        return saltString + ":" + hashed;
+    }
 
-            if (secretData.Length != 2)
-            {
-                return false;
-                // todo log
-            }
+    public static bool CheckPassword(string password, string secret)
+    {
+        if (string.IsNullOrEmpty(password))
+            return false;
 
-            var salt = Convert.FromBase64String(secretData[0]);
+        if (string.IsNullOrEmpty(secret))
+            return false;
 
-            var hashed = HashPassword(password, salt);
+        var secretData = secret.Split(':');
 
-            return hashed == secret;
-        }
+        if (secretData.Length != 2)
+            return false;
+        // todo log
+
+        var salt = Convert.FromBase64String(secretData[0]);
+
+        var hashed = HashPassword(password, salt);
+
+        return hashed == secret;
     }
 }

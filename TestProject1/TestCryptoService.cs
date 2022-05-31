@@ -4,7 +4,7 @@ using CorpMessengerBackend.Services;
 namespace TestProject1
 {
     [TestClass]
-    public class TestCrypto
+    public class TestCryptoService
     {
         [TestMethod]
         public void TestPassHash()

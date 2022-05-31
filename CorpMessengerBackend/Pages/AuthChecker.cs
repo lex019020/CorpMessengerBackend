@@ -1,10 +1,5 @@
-﻿using CorpMessengerBackend.Models;
-using CorpMessengerBackend.Services;
+﻿namespace CorpMessengerBackend.Pages;
 
-
-namespace CorpMessengerBackend.Pages
+public class AuthChecker
 {
-    public class AuthChecker
-    {
-    }
 }

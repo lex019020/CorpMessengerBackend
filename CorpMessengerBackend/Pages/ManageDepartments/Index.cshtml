@@ -12,18 +12,19 @@
 </p>
 <table class="table">
     <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Department[0].DepartmentName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Department[0].Modified)
-            </th>
-            <th></th>
-        </tr>
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.Department[0].DepartmentName)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Department[0].Modified)
+        </th>
+        <th></th>
+    </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.Department) {
+    @foreach (var item in Model.Department)
+    {
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.DepartmentName)
@@ -35,6 +36,6 @@
                 <a asp-page="./Edit" asp-route-id="@item.DepartmentId">Редактировать</a>
             </td>
         </tr>
-}
+    }
     </tbody>
 </table>

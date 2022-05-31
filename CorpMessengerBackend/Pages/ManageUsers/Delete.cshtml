@@ -10,7 +10,7 @@
 <h3>Уверены, что хотите удалить?</h3>
 <div>
     <h4>User</h4>
-    <hr />
+    <hr/>
     <dl class="row">
         <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.User.FirstName)
@@ -55,10 +55,10 @@
             @Html.DisplayFor(model => model.User.Department.DepartmentName)
         </dd>
     </dl>
-    
+
     <form method="post">
-        <input type="hidden" asp-for="User.UserId" />
-        <input type="submit" value="Удалить" class="btn btn-danger" /> |
+        <input type="hidden" asp-for="User.UserId"/>
+        <input type="submit" value="Удалить" class="btn btn-danger"/> |
         <a asp-page="./Index">Назад к списку</a>
     </form>
 </div>

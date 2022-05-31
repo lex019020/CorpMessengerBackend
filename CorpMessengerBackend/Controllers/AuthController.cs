@@ -1,77 +1,72 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using CorpMessengerBackend.HttpObjects;
 using CorpMessengerBackend.Models;
 using CorpMessengerBackend.Services;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Mvc;
 
-namespace CorpMessengerBackend.Controllers
+namespace CorpMessengerBackend.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class AuthController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class AuthController : ControllerBase
+    private readonly IAuthService _authService;
+    private readonly IAppDataContext _db;
+
+    public AuthController(IAppDataContext context, IAuthService authService)
     {
-        private readonly AppDataContext _db;
-        private readonly IAuthService _authService;
+        _db = context;
+        _authService = authService;
+    }
 
-        public AuthController(AppDataContext context, IAuthService authService)
-        {
-            _db = context;
-            _authService = authService;
-        }
+    [HttpGet] // check user auth
+    public Task<ActionResult<long>> Get(Credentials credentials)
+    {
+        if (credentials.DeviceId == "" || credentials.Token is "" or null)
+            return Task.FromResult<ActionResult<long>>(BadRequest(0));
 
-        [HttpGet] // check user auth
-        public async Task<ActionResult<long>> Get(Credentials credentials)
-        {
-            if (credentials.DeviceId == "" || credentials.Token == "")
-                return BadRequest(0);
+        return Task.FromResult<ActionResult<long>>(_authService.CheckUserAuth(_db, credentials.Token));
+    }
 
-            return _authService.CheckUserAuth(_db, credentials.Token);
-        }
+    [HttpPost] // user auth
+    public async Task<ActionResult<Credentials>> Post(Credentials credentials)
+    {
+        if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
+            return BadRequest();
 
-        [HttpPost] // user auth
-        public async Task<ActionResult<Credentials>> Post(Credentials credentials)
-        {
-            if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
-                return BadRequest();
+        var newAuth = await _authService.SignInEmail(_db, credentials);
 
-            var auth = await _authService.SignInEmail(_db, credentials);
+        if (newAuth == null || newAuth.AuthToken == "") return Unauthorized();
 
-            if (auth == null || auth.AuthToken == "") return Unauthorized();
+        credentials.Token = newAuth.AuthToken;
 
-            credentials.Token = auth.AuthToken;
+        return Ok(credentials);
+    }
 
-            return Ok( credentials );
-        }
+    [HttpDelete]
+    public Task<ActionResult<bool>> Delete(Credentials credentials)
+    {
+        if (credentials.Token == "" || credentials.DeviceId == "")
+            return Task.FromResult<ActionResult<bool>>(BadRequest(false));
 
-        [HttpDelete]
-        public async Task<ActionResult<bool>> Delete(Credentials credentials)
-        {
-            if (credentials.Token == "" || credentials.DeviceId == "")
-                return BadRequest(false);
+        var signOutResult = _authService.SignOut(_db, credentials);
 
-            var ret =_authService.SignOut(_db, credentials);
+        return Task.FromResult<ActionResult<bool>>(Ok(signOutResult));
+    }
 
-            return Ok( ret );
-        }
+    [HttpPost("renew")] // renew user auth
+    //[Route("api/[controller]/renew")]
+    public async Task<ActionResult<Credentials>> UpdateAuth(Credentials credentials)
+    {
+        if (credentials.DeviceId == "" || credentials.Token == "")
+            return BadRequest();
 
-        [HttpPost("renew")] // renew user auth
-        //[Route("api/[controller]/renew")]
-        public async Task<ActionResult<Credentials>> UpdateAuth(Credentials credentials)
-        {
-            if (credentials.DeviceId == "" || credentials.Token == "")
-                return BadRequest();
+        var renewedAuth = await _authService.RenewAuth(_db, credentials);
 
-            var auth = await _authService.RenewAuth(_db, credentials);
+        if (renewedAuth == null || renewedAuth.AuthToken == "") return Unauthorized();
 
-            if (auth == null || auth.AuthToken == "") return Unauthorized();
+        credentials.Token = renewedAuth.AuthToken;
 
-            credentials.Token = auth.AuthToken;
-
-            return Ok(credentials);
-        }
+        return Ok(credentials);
     }
 }

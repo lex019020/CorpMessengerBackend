@@ -6,19 +6,19 @@
 }
 
 <h1>Панель администрирования</h1>
-<h2>Время на сервере: @DateTime.Now</h2><br />
-<br />
-<br />
+<h2>Время на сервере: @DateTime.Now</h2><br/>
+<br/>
+<br/>
 <div class="row">
     <div class="col-md-4">
         <form method="post">
             <div class="form-group">
                 <label asp-for="AdminKey" class="control-label">Ключ администратора</label>
-                <input asp-for="AdminKey" class="form-control" />
+                <input asp-for="AdminKey" class="form-control"/>
                 <span asp-validation-for="AdminKey" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <input type="submit" value="Сохранить" class="btn btn-primary" />
+                <input type="submit" value="Сохранить" class="btn btn-primary"/>
             </div>
         </form>
     </div>

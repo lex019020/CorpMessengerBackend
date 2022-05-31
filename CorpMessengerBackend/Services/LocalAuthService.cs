@@ -1,127 +1,114 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CorpMessengerBackend.HttpObjects;
 using CorpMessengerBackend.Models;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace CorpMessengerBackend.Services
+namespace CorpMessengerBackend.Services;
+
+public class LocalAuthService : IAuthService
 {
-    public class LocalAuthService : IAuthService
+    // !!!!!!!!!!!!! todo DeviceId !!!!!!!!!!!!!!
+
+    public async Task<Auth?> SignInEmail(IAppDataContext context, Credentials credentials)
     {
+        var user = context.Users.FirstOrDefault(u => u.Email == credentials.Email);
 
-        public LocalAuthService()
+        if (user == null) return null;
+
+        var secret = context.UserSecrets.FirstOrDefault(
+                s => s.UserId == user.UserId)
+            ?.Secret;
+
+
+        if (secret == null)
+            // todo log 
+            throw new Exception($"No secret found for user {user.Email}!");
+
+        if (!CryptographyService.CheckPassword(credentials.Password!, secret))
+            return new Auth();
+
+        var newToken = CryptographyService.GenerateNewToken();
+
+        var newAuth = (await context.Auths.AddAsync(new Auth
         {
-        }
+            AuthToken = newToken,
+            DeviceId = credentials.DeviceId!,
+            UserId = user.UserId,
+            Modified = DateTime.UtcNow
+        })).Entity;
 
-        // !!!!!!!!!!!!! todo DeviceId !!!!!!!!!!!!!!
+        await context.SaveChangesAsync();
 
-        public async Task<Auth> SignInEmail(AppDataContext context, Credentials credentials)
+        return newAuth;
+    }
+
+    public async Task<bool> SignOut(IAppDataContext context, Credentials credentials)
+    {
+        var authToDel = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token);
+
+        if (authToDel == null) return false;
+
+        context.Auths.Remove(authToDel);
+        await context.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> SignOutFull(IAppDataContext context, long userId)
+    {
+        var authToDel = context.Auths.FirstOrDefault(a => a.UserId == userId);
+
+        if (authToDel == null) return false;
+
+        do
         {
-            var user = context.Users.FirstOrDefault(u => u.Email == credentials.Email);
-
-            if (user == null) return null;
-
-            var secret = context.UserSecrets.FirstOrDefault(
-                    s => s.UserId == user.UserId)
-                ?.Secret;
-            
-
-            if (secret == null)
-            {
-                // todo log 
-                throw new Exception("No secret found for user!");
-            }
-
-            if (!CryptographyService.CheckPassword(credentials.Password, secret))
-                return new Auth();
-
-            var newToken = CryptographyService.GenerateNewToken();
-
-            var newAuth = (await context.Auths.AddAsync(new Auth
-            {
-                AuthToken = newToken, 
-                DeviceId = credentials.DeviceId, 
-                UserId = user.UserId,
-                Modified = DateTime.UtcNow
-            })).Entity;
-
-            await context.SaveChangesAsync();
-
-            return newAuth;
-        }
-
-        public async Task<bool> SignOut(AppDataContext context, Credentials credentials)
-        {
-            var authToDel = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token);
-
-            if (authToDel == null) return false;
-
             context.Auths.Remove(authToDel);
-            await context.SaveChangesAsync();
 
-            return true;
-        }
+            authToDel = context.Auths.FirstOrDefault(a => a.UserId == userId);
+        } while (authToDel != null);
 
-        public async Task<bool> SignOutFull(AppDataContext context, long userId)
-        {
-            var authToDel = context.Auths.FirstOrDefault(a => a.UserId == userId);
+        await context.SaveChangesAsync();
 
-            if (authToDel == null) return false;
+        return true;
+    }
 
-            do
-            {
-                context.Auths.Remove(authToDel);
+    public long CheckUserAuth(IAppDataContext context, string token)
+    {
+        var auth = context.Auths.FirstOrDefault(a => a.AuthToken == token);
 
-                authToDel = context.Auths.FirstOrDefault(a => a.UserId == userId);
-            } while (authToDel != null);
+        if (auth == null
+            || auth.Modified.AddDays(7) < DateTime.UtcNow
+            || !context.Users.Any(u => u.UserId == auth.UserId && !u.Deleted))
+            return 0;
 
-            await context.SaveChangesAsync();
+        return auth.UserId;
+    }
 
-            return true;
-        }
+    public bool CheckAdminAuth(IAppDataContext context, string token)
+    {
+        var a = context.AdminAuths.FirstOrDefault();
+        if (a == null) return false;
 
-        public long CheckUserAuth(AppDataContext context, string token)
-        {
-            var auth = context.Auths.FirstOrDefault(a => a.AuthToken == token);
+        return token == a.Token;
+    }
 
-            if (auth == null
-                ||auth.Modified.AddDays(7) < DateTime.UtcNow
-                || !context.Users.Any(u => u.UserId == auth.UserId && !u.Deleted)) 
-                return 0;
-            
-            return auth.UserId;
-        }
+    public async Task<Auth?> RenewAuth(IAppDataContext context, Credentials credentials)
+    {
+        var auth = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token
+                                                     && a.DeviceId == credentials.DeviceId);
 
-        public bool CheckAdminAuth(AppDataContext context, string token)
-        {
-            var a = context.AdminAuths.FirstOrDefault();
-            if (a == null)
-            {
-                return false;
-            }
+        if (auth == null
+            || !context.Users.Any(u => !u.Deleted && u.UserId == auth.UserId))
+            return null;
 
-            return token == a.Token;
-        }
+        auth.AuthToken = CryptographyService.GenerateNewToken();
+        auth.Modified = DateTime.UtcNow;
 
-        public async Task<Auth> RenewAuth(AppDataContext context, Credentials credentials)
-        {
-            var auth = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token 
-                                                         && a.DeviceId == credentials.DeviceId);
+        context.Auths.Update(auth);
 
-            if (auth == null 
-            || !context.Users.Any(u => !u.Deleted && u.UserId == auth.UserId)) 
-                return null;
+        await context.SaveChangesAsync();
 
-            auth.AuthToken = CryptographyService.GenerateNewToken();
-            auth.Modified = DateTime.UtcNow;
-
-            context.Auths.Update(auth);
-
-            await context.SaveChangesAsync();
-
-            return auth;
-        }
+        return auth;
     }
 }

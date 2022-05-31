@@ -17,4 +17,8 @@
     <ProjectReference Include="..\CorpMessengerBackend\CorpMessengerBackend.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Mocks\" />
+  </ItemGroup>
+
 </Project>
