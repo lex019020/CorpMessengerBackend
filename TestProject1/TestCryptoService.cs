@@ -3,17 +3,26 @@ using CorpMessengerBackend.Services;
 
 namespace TestProject1
 {
+    
     [TestClass]
     public class TestCryptoService
     {
+        private readonly ICriptographyProvider _cryptographyProvider;
+
+        public TestCryptoService()
+        {
+            _cryptographyProvider = new CryptographyService();
+        }
+
+
         [TestMethod]
         public void TestPassHash()
         {
             var password = "it387yfiukdjbflky";
 
-            var secret = CryptographyService.HashPassword(password);
+            var secret = _cryptographyProvider.HashPassword(password);
 
-            Assert.IsTrue(CryptographyService.CheckPassword(password, secret));
+            Assert.IsTrue(_cryptographyProvider.CheckPassword(password, secret));
         }
 
         [TestMethod]
@@ -21,27 +30,27 @@ namespace TestProject1
         {
             var password = "it387yfiukdjbflky";
 
-            var secret = CryptographyService.HashPassword(password);
+            var secret = _cryptographyProvider.HashPassword(password);
 
-            Assert.IsFalse(CryptographyService.CheckPassword(password, "sdfdsdsbgdfsh"));
+            Assert.IsFalse(_cryptographyProvider.CheckPassword(password, "sdfdsdsbgdfsh"));
         }
 
         [TestMethod]
         public void TestBadInput()
         {
-            Assert.IsFalse(CryptographyService.CheckPassword(null, ""));
+            Assert.IsFalse(_cryptographyProvider.CheckPassword(null, ""));
         }
 
         [TestMethod]
         public void TestBadInput_2()
         {
-            Assert.IsFalse(CryptographyService.CheckPassword("adasd", ""));
+            Assert.IsFalse(_cryptographyProvider.CheckPassword("adasd", ""));
         }
 
         [TestMethod]
         public void TestTokenGen()
         {
-            var token = CryptographyService.GenerateNewToken();
+            var token = _cryptographyProvider.GenerateNewToken();
 
             Assert.IsTrue(!string.IsNullOrEmpty(token));   
             Assert.IsTrue(token.Length >= 96);

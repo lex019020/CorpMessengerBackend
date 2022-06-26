@@ -15,17 +15,19 @@ public class DepartmentController : ControllerBase
 {
     private readonly IAuthService _authServiceService;
     private readonly IAppDataContext _db;
+    private readonly IDateTimeService _dateTimeService;
 
-    public DepartmentController(IAppDataContext dataContext, IAuthService authService)
+    public DepartmentController(IAppDataContext dataContext, IAuthService authService, IDateTimeService dateTimeService)
     {
         _db = dataContext;
         _authServiceService = authService;
+        _dateTimeService = dateTimeService;
 
         if (_db.Departments.Any()) return;
         _db.Departments.Add(new Department
         {
             DepartmentName = "Based department",
-            Modified = DateTime.UtcNow
+            Modified = _dateTimeService.CurrentDateTime
         });
 
         _db.SaveChangesAsync();
@@ -67,7 +69,7 @@ public class DepartmentController : ControllerBase
         if (_db.Departments.Any(d => d.DepartmentId == department.DepartmentId))
             return BadRequest();
 
-        department.Modified = DateTime.UtcNow;
+        department.Modified = _dateTimeService.CurrentDateTime;
 
         var newDep = _db.Departments.Add(department);
         await _db.SaveChangesAsync();
@@ -87,7 +89,7 @@ public class DepartmentController : ControllerBase
         if (!_db.Departments.Any(d => d.DepartmentId == department.DepartmentId))
             return BadRequest();
 
-        department.Modified = DateTime.UtcNow;
+        department.Modified = _dateTimeService.CurrentDateTime;
 
         var updatedDep = _db.Update(department);
         await _db.SaveChangesAsync();

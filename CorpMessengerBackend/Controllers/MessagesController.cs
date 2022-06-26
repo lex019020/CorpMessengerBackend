@@ -16,11 +16,13 @@ public class MessagesController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IAppDataContext _db;
+    private readonly IDateTimeService _dateTimeService;
 
-    public MessagesController(IAuthService authService, IAppDataContext dataContext)
+    public MessagesController(IAuthService authService, IAppDataContext dataContext, IDateTimeService dateTimeService)
     {
         _authService = authService;
         _db = dataContext;
+        _dateTimeService = dateTimeService;
     }
 
     // get messages by datetime
@@ -86,7 +88,7 @@ public class MessagesController : ControllerBase
             ChatId = chatId,
             UserId = userId,
             Text = text,
-            Sent = DateTime.UtcNow
+            Sent = _dateTimeService.CurrentDateTime
         });
 
         // todo notifications
@@ -173,7 +175,7 @@ public class MessagesController : ControllerBase
                         ? curUserId
                         : addedUsers[rnd.Next(0, addedUsers.Count)],
                     Text = $"Тестовое сообщение {rnd.Next(100_000_000)} test",
-                    Sent = DateTime.UtcNow.AddSeconds(
+                    Sent = _dateTimeService.CurrentDateTime.AddSeconds(
                         rnd.Next(-7_000_000, -10))
                 });
         }

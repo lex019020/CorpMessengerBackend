@@ -9,6 +9,14 @@ namespace CorpMessengerBackend.Services;
 public class LocalAuthService : IAuthService
 {
     // !!!!!!!!!!!!! todo DeviceId !!!!!!!!!!!!!!
+    private readonly ICriptographyProvider _cryptographyProvider;
+    private readonly IDateTimeService _dateTimeService;
+
+    public LocalAuthService(ICriptographyProvider cryptographyProvider, IDateTimeService dateTimeService)
+    {
+        _cryptographyProvider = cryptographyProvider;
+        _dateTimeService = dateTimeService;
+    }
 
     public async Task<Auth?> SignInEmail(IAppDataContext context, Credentials credentials)
     {
@@ -25,17 +33,17 @@ public class LocalAuthService : IAuthService
             // todo log 
             throw new Exception($"No secret found for user {user.Email}!");
 
-        if (!CryptographyService.CheckPassword(credentials.Password!, secret))
-            return new Auth();
+        if (!_cryptographyProvider.CheckPassword(credentials.Password!, secret))
+            return null;
 
-        var newToken = CryptographyService.GenerateNewToken();
+        var newToken = _cryptographyProvider.GenerateNewToken();
 
         var newAuth = (await context.Auths.AddAsync(new Auth
         {
             AuthToken = newToken,
             DeviceId = credentials.DeviceId!,
             UserId = user.UserId,
-            Modified = DateTime.UtcNow
+            Modified = _dateTimeService.CurrentDateTime
         })).Entity;
 
         await context.SaveChangesAsync();
@@ -78,7 +86,7 @@ public class LocalAuthService : IAuthService
         var auth = context.Auths.FirstOrDefault(a => a.AuthToken == token);
 
         if (auth == null
-            || auth.Modified.AddDays(7) < DateTime.UtcNow
+            ||  auth.Modified < _dateTimeService.MinValidTokenDateTime
             || !context.Users.Any(u => u.UserId == auth.UserId && !u.Deleted))
             return 0;
 
@@ -99,11 +107,12 @@ public class LocalAuthService : IAuthService
                                                      && a.DeviceId == credentials.DeviceId);
 
         if (auth == null
+            ||  auth.Modified < _dateTimeService.MinValidTokenDateTime
             || !context.Users.Any(u => !u.Deleted && u.UserId == auth.UserId))
             return null;
 
-        auth.AuthToken = CryptographyService.GenerateNewToken();
-        auth.Modified = DateTime.UtcNow;
+        auth.AuthToken = _cryptographyProvider.GenerateNewToken();
+        auth.Modified = _dateTimeService.CurrentDateTime;
 
         context.Auths.Update(auth);
 

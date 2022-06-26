@@ -16,11 +16,13 @@ public class ChatController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IAppDataContext _db;
+    private readonly IDateTimeService _dateTimeService;
 
-    public ChatController(IAuthService authService, IAppDataContext dataContext)
+    public ChatController(IAuthService authService, IAppDataContext dataContext, IDateTimeService dateTimeService)
     {
         _authService = authService;
         _db = dataContext;
+        _dateTimeService = dateTimeService;
     }
 
     // get user chats
@@ -104,7 +106,7 @@ public class ChatController : ControllerBase
         {
             ChatName = chatInfo.ChatName ?? "",
             IsPersonal = chatInfo.IsPersonal,
-            Modified = DateTime.UtcNow
+            Modified = _dateTimeService.CurrentDateTime
         });
 
         await _db.SaveChangesAsync();
@@ -144,7 +146,7 @@ public class ChatController : ControllerBase
             return BadRequest();
 
         chat.ChatName = newChat.ChatName;
-        chat.Modified = DateTime.UtcNow;
+        chat.Modified = _dateTimeService.CurrentDateTime;
 
         var changedChat = _db.Chats.Update(chat);
         await _db.SaveChangesAsync();

@@ -15,12 +15,14 @@ public class UsersController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly IAppDataContext _db;
+    private readonly ICriptographyProvider _cryptographyProvider;
 
     public UsersController(IAppDataContext dataContext,
-        IAuthService authService)
+        IAuthService authService, ICriptographyProvider cryptographyProvider)
     {
         _db = dataContext;
         _authService = authService;
+        _cryptographyProvider = cryptographyProvider;
 
         if (!_db.Users.Any())
         {
@@ -39,7 +41,7 @@ public class UsersController : ControllerBase
             _db.UserSecrets.Add(new UserSecret
             {
                 UserId = basicUser.Entity.UserId,
-                Secret = CryptographyService.HashPassword("qwerty")
+                Secret = _cryptographyProvider.HashPassword("qwerty")
             });
         }
         else
@@ -50,7 +52,7 @@ public class UsersController : ControllerBase
                 _db.UserSecrets.Add(new UserSecret
                 {
                     UserId = user.UserId,
-                    Secret = CryptographyService.HashPassword(user.FirstName + user.SecondName)
+                    Secret = _cryptographyProvider.HashPassword(user.FirstName + user.SecondName)
                 });
         }
 
@@ -96,7 +98,7 @@ public class UsersController : ControllerBase
         _db.UserSecrets.Add(new UserSecret
         {
             UserId = user.UserId,
-            Secret = CryptographyService.HashPassword(user.FirstName + user.SecondName)
+            Secret = _cryptographyProvider.HashPassword(user.FirstName + user.SecondName)
         });
 
 

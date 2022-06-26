@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
 namespace CorpMessengerBackend.Services;
 
-public class CryptographyService
+public class CryptographyService : ICriptographyProvider
 {
     private const string AllowableCharacters =
         "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789";
 
-    public static string GenerateNewToken()
+    public string GenerateNewToken()
     {
         var length = new Random(Environment.TickCount).Next(96, 128);
 
@@ -24,7 +24,7 @@ public class CryptographyService
         return new string(bytes.Select(x => AllowableCharacters[x % AllowableCharacters.Length]).ToArray());
     }
 
-    public static string HashPassword(string password, byte[]? salt = null)
+    public string HashPassword(string password, byte[]? salt = null)
     {
         if (salt == null || salt.Length < 8)
         {
@@ -45,7 +45,7 @@ public class CryptographyService
         return saltString + ":" + hashed;
     }
 
-    public static bool CheckPassword(string password, string secret)
+    public bool CheckPassword(string password, string secret)
     {
         if (string.IsNullOrEmpty(password))
             return false;

@@ -25,10 +25,11 @@ public class Startup
         services.AddDbContext<AppDataContext>(opt => opt.UseSqlServer(con));
 
         services.AddControllers();
-
         services.AddRazorPages();
 
         services.AddSingleton<IAuthService, LocalAuthService>();
+        services.AddSingleton<ICriptographyProvider, CryptographyService>();
+        services.AddSingleton<IDateTimeService, DateTimeService>();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

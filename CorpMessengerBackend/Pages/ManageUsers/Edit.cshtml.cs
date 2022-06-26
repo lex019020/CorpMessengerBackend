@@ -13,10 +13,12 @@ namespace CorpMessengerBackend.Pages.ManageUsers;
 public class EditModel : PageModel
 {
     private readonly AppDataContext _context;
+    private readonly ICriptographyProvider _cryptographyProvider;
 
-    public EditModel(AppDataContext context)
+    public EditModel(AppDataContext context, ICriptographyProvider cryptographyProvider)
     {
         _context = context;
+        _cryptographyProvider = cryptographyProvider;
     }
 
     [BindProperty] public User User { get; set; }
@@ -48,17 +50,17 @@ public class EditModel : PageModel
         if (newPassword != null && newPassword.Length > 7)
         {
             var secret = _context.UserSecrets.First(s => s.UserId == User.UserId);
-            if (secret == null)
+            if (secret is null)
             {
                 _context.UserSecrets.Add(new UserSecret
                 {
                     UserId = User.UserId,
-                    Secret = CryptographyService.HashPassword(newPassword)
+                    Secret = _cryptographyProvider.HashPassword(newPassword)
                 });
             }
             else
             {
-                secret.Secret = CryptographyService.HashPassword(newPassword);
+                secret.Secret = _cryptographyProvider.HashPassword(newPassword);
                 _context.UserSecrets.Update(secret);
             }
 

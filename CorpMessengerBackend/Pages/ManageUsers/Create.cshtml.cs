@@ -11,10 +11,12 @@ namespace CorpMessengerBackend.Pages.ManageUsers;
 public class CreateModel : PageModel
 {
     private readonly AppDataContext _context;
+    private readonly ICriptographyProvider _cryptographyProvider;
 
-    public CreateModel(AppDataContext context)
+    public CreateModel(AppDataContext context, ICriptographyProvider cryptographyProvider)
     {
         _context = context;
+        _cryptographyProvider = cryptographyProvider;
     }
 
     [BindProperty] public User User { get; set; }
@@ -39,7 +41,7 @@ public class CreateModel : PageModel
         _context.UserSecrets.Add(new UserSecret
         {
             UserId = usr.Entity.UserId,
-            Secret = CryptographyService.HashPassword(password)
+            Secret = _cryptographyProvider.HashPassword(password)
         });
 
         await _context.SaveChangesAsync();
