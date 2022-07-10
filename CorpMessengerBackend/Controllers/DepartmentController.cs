@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CorpMessengerBackend.Models;
@@ -13,15 +12,15 @@ namespace CorpMessengerBackend.Controllers;
 [ApiController]
 public class DepartmentController : ControllerBase
 {
-    private readonly IAuthService _authServiceService;
     private readonly IAppDataContext _db;
     private readonly IDateTimeService _dateTimeService;
+    private readonly IUserAuthProvider _authProvider;
 
-    public DepartmentController(IAppDataContext dataContext, IAuthService authService, IDateTimeService dateTimeService)
+    public DepartmentController(IAppDataContext dataContext, IDateTimeService dateTimeService, IUserAuthProvider authProvider)
     {
         _db = dataContext;
-        _authServiceService = authService;
         _dateTimeService = dateTimeService;
+        _authProvider = authProvider;
 
         if (_db.Departments.Any()) return;
         _db.Departments.Add(new Department
@@ -34,22 +33,14 @@ public class DepartmentController : ControllerBase
     }
 
     [HttpGet] // get list of departments
-    public async Task<ActionResult<IEnumerable<Department>>> Get(string token)
+    public async Task<ActionResult<IEnumerable<Department>>> Get()
     {
-        if (!_authServiceService.CheckAdminAuth(_db, token)
-            && _authServiceService.CheckUserAuth(_db, token) == 0)
-            return Unauthorized();
-
         return Ok(await _db.Departments.ToArrayAsync());
     }
 
     [HttpGet("id")] // get department by id
-    public async Task<ActionResult<Department>> Get(string token, long depId)
+    public async Task<ActionResult<Department>> Get(long depId)
     {
-        if (!_authServiceService.CheckAdminAuth(_db, token)
-            && _authServiceService.CheckUserAuth(_db, token) == 0)
-            return Unauthorized();
-
         if (!_db.Departments.Any(d => d.DepartmentId == depId))
             return NotFound();
 
@@ -58,13 +49,11 @@ public class DepartmentController : ControllerBase
     }
 
     [HttpPost] // add department
-    public async Task<ActionResult<Department>> Post(string token, Department department)
+    public async Task<ActionResult<Department>> Post(Department department)
     {
-        if (!_authServiceService.CheckAdminAuth(_db, token))
-            return Unauthorized();
-
-        //if (department == null)
-        //    return BadRequest();
+        var adminAuth = _authProvider.GetAdminAuth();
+        if (!adminAuth)
+            return Unauthorized(); 
 
         if (_db.Departments.Any(d => d.DepartmentId == department.DepartmentId))
             return BadRequest();
@@ -78,13 +67,11 @@ public class DepartmentController : ControllerBase
     }
 
     [HttpPut] // update department
-    public async Task<ActionResult<Department>> Put(string token, Department department)
+    public async Task<ActionResult<Department>> Put(Department department)
     {
-        if (!_authServiceService.CheckAdminAuth(_db, token))
+        var adminAuth = _authProvider.GetAdminAuth();
+        if (!adminAuth)
             return Unauthorized();
-
-        //if (department == null)
-        //    return BadRequest();
 
         if (!_db.Departments.Any(d => d.DepartmentId == department.DepartmentId))
             return BadRequest();

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CorpMessengerBackend.HttpObjects;
 using CorpMessengerBackend.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace CorpMessengerBackend.Services;
 
@@ -11,11 +12,14 @@ public class LocalAuthService : IAuthService
     // !!!!!!!!!!!!! todo DeviceId !!!!!!!!!!!!!!
     private readonly ICriptographyProvider _cryptographyProvider;
     private readonly IDateTimeService _dateTimeService;
+    private readonly IUserAuthProvider _userAuthProvider;
 
-    public LocalAuthService(ICriptographyProvider cryptographyProvider, IDateTimeService dateTimeService)
+    public LocalAuthService(ICriptographyProvider cryptographyProvider, IDateTimeService dateTimeService, 
+        IUserAuthProvider userAuthProvider)
     {
         _cryptographyProvider = cryptographyProvider;
         _dateTimeService = dateTimeService;
+        _userAuthProvider = userAuthProvider;
     }
 
     public async Task<Auth?> SignInEmail(IAppDataContext context, Credentials credentials)
@@ -51,14 +55,15 @@ public class LocalAuthService : IAuthService
         return newAuth;
     }
 
-    public async Task<bool> SignOut(IAppDataContext context, Credentials credentials)
+    public async Task<bool> SignOut(IAppDataContext dataContext, HttpContext httpContext)
     {
-        var authToDel = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token);
+        var authToDel = dataContext.Auths.FirstOrDefault(
+            a => a.AuthToken == _userAuthProvider.GetToken());
 
         if (authToDel == null) return false;
 
-        context.Auths.Remove(authToDel);
-        await context.SaveChangesAsync();
+        dataContext.Auths.Remove(authToDel);
+        await dataContext.SaveChangesAsync();
 
         return true;
     }
@@ -101,9 +106,9 @@ public class LocalAuthService : IAuthService
         return token == a.Token;
     }
 
-    public async Task<Auth?> RenewAuth(IAppDataContext context, Credentials credentials)
+    public async Task<Auth?> RenewAuth(IAppDataContext context, Credentials credentials, HttpContext httpContext)
     {
-        var auth = context.Auths.FirstOrDefault(a => a.AuthToken == credentials.Token
+        var auth = context.Auths.FirstOrDefault(a => a.AuthToken == _userAuthProvider.GetToken()
                                                      && a.DeviceId == credentials.DeviceId);
 
         if (auth == null

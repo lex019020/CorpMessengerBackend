@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CorpMessengerBackend.HttpObjects;
@@ -14,29 +13,28 @@ namespace CorpMessengerBackend.Controllers;
 [ApiController]
 public class ChatController : ControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly IUserAuthProvider _authProvider;
     private readonly IAppDataContext _db;
     private readonly IDateTimeService _dateTimeService;
 
-    public ChatController(IAuthService authService, IAppDataContext dataContext, IDateTimeService dateTimeService)
+    public ChatController(IUserAuthProvider authProvider, IAppDataContext dataContext, IDateTimeService dateTimeService)
     {
-        _authService = authService;
+        _authProvider = authProvider;
         _db = dataContext;
         _dateTimeService = dateTimeService;
     }
 
     // get user chats
     [HttpGet]
-    public async Task<ActionResult<List<ChatInfo>>> Get(string token)
+    public async Task<ActionResult<List<ChatInfo>>> Get()
     {
         // проверить что польз авторизован
-        var userId = _authService.CheckUserAuth(_db, token);
-        var isAdmin = _authService.CheckAdminAuth(_db, token);
-        if (userId == 0 && !isAdmin) return Unauthorized();
+        var userAuth = _authProvider.GetUserAuth();
+        var adminAuth = _authProvider.GetAdminAuth();
 
         var userChatsList = new List<ChatInfo?>();
 
-        if (isAdmin)
+        if (adminAuth)
         {
             userChatsList.AddRange(_db.Chats.Select(c => GetInfoById(c.ChatId)));
 
@@ -44,7 +42,7 @@ public class ChatController : ControllerBase
         }
 
         var chatLinks = await _db.UserChatLinks
-            .Where(ucl => ucl.UserId == userId).ToListAsync();
+            .Where(ucl => ucl.UserId == userAuth.UserId).ToListAsync();
 
         // собираем список чатов
         chatLinks.ForEach(ucl => userChatsList.Add(GetInfoById(ucl.ChatId)));
@@ -55,17 +53,16 @@ public class ChatController : ControllerBase
     }
 
     // get single chat info
-    public Task<ActionResult<ChatInfo>> Get(string token, long chatId)
+    public Task<ActionResult<ChatInfo>> Get(long chatId)
     {
         // проверить что польз авторизован
-        var userId = _authService.CheckUserAuth(_db, token);
-        var isAdmin = _authService.CheckAdminAuth(_db, token);
-        if (userId == 0 && !isAdmin) return Task.FromResult<ActionResult<ChatInfo>>(Unauthorized());
+        var userAuth = _authProvider.GetUserAuth();
+        var adminAuth = _authProvider.GetAdminAuth();
 
-        if (!isAdmin)
+        if (!adminAuth)
             // проверка что пользователь есть в чате
             if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chatId
-                                              && ucl.UserId == userId))
+                                              && ucl.UserId == userAuth.UserId))
                 return Task.FromResult<ActionResult<ChatInfo>>(BadRequest());
 
         var chatInfo = GetInfoById(chatId);
@@ -77,15 +74,14 @@ public class ChatController : ControllerBase
 
     // create new chat
     [HttpPost]
-    public async Task<ActionResult<long>> Post(string token, ChatInfo chatInfo)
+    public async Task<ActionResult<long>> Post(ChatInfo chatInfo)
     {
         // проверить что польз авторизован
-        var userId = _authService.CheckUserAuth(_db, token);
-        if (userId == 0) return Unauthorized();
+        var userAuth = _authProvider.GetUserAuth();
 
         // проверить что он в списке
         var userList = chatInfo.Users;
-        if (!userList.Contains(userId))
+        if (!userList.Contains(userAuth.UserId))
             return BadRequest();
 
         // проверить корректность списка
@@ -120,6 +116,19 @@ public class ChatController : ControllerBase
                 UserId = uid
             });
 
+        // сообщение о создании
+        if (!chatInfo.IsPersonal)
+        {
+            var creator = _db.Users.First(u => u.UserId == userAuth.UserId);
+            
+            await _db.Messages.AddAsync(new Message
+            {
+                ChatId = newChat.Entity.ChatId,
+                Sent = _dateTimeService.CurrentDateTime,
+                Text = $"{creator.FirstName} {creator.SecondName} создал(а) чат"
+            });
+        }
+
         await _db.SaveChangesAsync();
 
         return Ok(newChat.Entity);
@@ -127,11 +136,10 @@ public class ChatController : ControllerBase
 
     // change chat something
     [HttpPut]
-    public async Task<ActionResult<Chat>> Put(string token, Chat newChat)
+    public async Task<ActionResult<Chat>> Put(Chat newChat)
     {
         // проверить что польз авторизован
-        var userId = _authService.CheckUserAuth(_db, token);
-        if (userId == 0) return Unauthorized();
+        var userAuth = _authProvider.GetUserAuth();
 
         // todo admin thing
 
@@ -142,7 +150,7 @@ public class ChatController : ControllerBase
 
         // проверка что пользователь есть в чате
         if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
-                                          && ucl.UserId == userId))
+                                          && ucl.UserId == userAuth.UserId))
             return BadRequest();
 
         chat.ChatName = newChat.ChatName;
@@ -156,10 +164,9 @@ public class ChatController : ControllerBase
 
     // add user to chat
     [HttpPost("addUser")]
-    public async Task<ActionResult<bool>> AddUser(string token, long chatId, long userToAdd)
+    public async Task<ActionResult<bool>> AddUser(long chatId, long userToAdd)
     {
-        var userId = _authService.CheckUserAuth(_db, token);
-        if (userId == 0) return Unauthorized();
+        var userAuth = _authProvider.GetUserAuth();
 
         // todo admin thing
 
@@ -170,11 +177,12 @@ public class ChatController : ControllerBase
 
         // проверка что пользователь есть в чате
         if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
-                                          && ucl.UserId == userId))
+                                          && ucl.UserId == userAuth.UserId))
             return BadRequest();
 
         // проверка второго пользователя на существование
-        if (!_db.Users.Any(u => u.UserId == userToAdd))
+        var added = _db.Users.FirstOrDefault(u => u.UserId == userToAdd);
+        if (added is null)
             return BadRequest();
 
         // проверка что его нет в чате
@@ -188,19 +196,35 @@ public class ChatController : ControllerBase
             ChatId = chat.ChatId,
             UserId = userToAdd,
             Notifications = true
-        }).AsTask().ContinueWith(async _ => await _db.SaveChangesAsync());
+        });
+        await _db.SaveChangesAsync();
 
-        // todo в чат системное сообщение
+        var adder = _db.Users.FirstOrDefault(u => u.UserId == userAuth.UserId);
+        if (adder is null)
+        {
+            // todo log
+            return Problem();
+        }
+
+        await _db.Messages.AddAsync(new Message
+        {
+            ChatId = chat.ChatId,
+            Sent = _dateTimeService.CurrentDateTime,
+            Text = $"{adder.FirstName} {adder.SecondName} добавил(а) пользователя {added.FirstName} {added.SecondName}"
+        });
+        
+        await _db.SaveChangesAsync();
 
         return Ok(true);
     }
 
     // kick user
     [HttpPost("kickUser")]
-    public async Task<ActionResult<bool>> KickUser(string token, long chatId, long userToKick)
+    public async Task<ActionResult<bool>> KickUser(long chatId, long userToKick)
     {
-        var userId = _authService.CheckUserAuth(_db, token);
-        if (userId == 0) return Unauthorized();
+        var userAuth = _authProvider.GetUserAuth();
+
+        var kicker = _db.Users.First(u => u.UserId == userAuth.UserId);
 
         // todo admin thing
 
@@ -209,14 +233,17 @@ public class ChatController : ControllerBase
         if (chat == null)
             return BadRequest();
 
+        // проверка второго пользователя на существование
+        var kicked = _db.Users.FirstOrDefault(u => u.UserId == userToKick);
+        if (kicked is null)
+            return BadRequest();
+        
         // проверка что пользователь есть в чате
         if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
-                                          && ucl.UserId == userId))
+                                          && ucl.UserId == userAuth.UserId))
             return BadRequest();
 
-        // проверка второго пользователя на существование
-        if (!_db.Users.Any(u => u.UserId == userToKick))
-            return BadRequest();
+        
 
         // проверка что кикаемый есть в чате
         var link = _db.UserChatLinks.FirstOrDefault(
@@ -227,10 +254,16 @@ public class ChatController : ControllerBase
 
         // удаление
         _db.UserChatLinks.Remove(link);
+        
+        // системное сообщение
+        await _db.Messages.AddAsync(new Message
+        {
+            ChatId = chat.ChatId,
+            Sent = _dateTimeService.CurrentDateTime,
+            Text = $"{kicker.FirstName} {kicker.SecondName} удалил(а) пользователя {kicked.FirstName} {kicked.SecondName}"
+        });
 
         await _db.SaveChangesAsync();
-
-        // todo в чат системное сообщение
 
         return Ok(true);
     }

@@ -1,3 +1,4 @@
+using CorpMessengerBackend.Middleware;
 using CorpMessengerBackend.Models;
 using CorpMessengerBackend.Services;
 using Microsoft.AspNetCore.Builder;
@@ -30,6 +31,8 @@ public class Startup
         services.AddSingleton<IAuthService, LocalAuthService>();
         services.AddSingleton<ICriptographyProvider, CryptographyService>();
         services.AddSingleton<IDateTimeService, DateTimeService>();
+        
+        services.AddScoped<IUserAuthProvider, HttpContextUserAuthProvider>();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -39,6 +42,8 @@ public class Startup
         app.UseRouting();
         app.UseStaticFiles();
         app.UseDefaultFiles();
+
+        app.UseMiddleware<AuthMiddleware>();
 
         app.UseEndpoints(endpoints =>
         {

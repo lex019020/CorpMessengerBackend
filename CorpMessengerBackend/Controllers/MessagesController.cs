@@ -14,34 +14,34 @@ namespace CorpMessengerBackend.Controllers;
 [ApiController]
 public class MessagesController : ControllerBase
 {
-    private readonly IAuthService _authService;
     private readonly IAppDataContext _db;
     private readonly IDateTimeService _dateTimeService;
+    private readonly IUserAuthProvider _authProvider;
 
-    public MessagesController(IAuthService authService, IAppDataContext dataContext, IDateTimeService dateTimeService)
+    public MessagesController(IAppDataContext dataContext, IDateTimeService dateTimeService, IUserAuthProvider authProvider)
     {
-        _authService = authService;
         _db = dataContext;
         _dateTimeService = dateTimeService;
+        _authProvider = authProvider;
     }
 
     // get messages by datetime
     [HttpGet]
-    public async Task<ActionResult<List<Message>>> Get(string token, DateTime dateAfter)
+    public async Task<ActionResult<List<Message>>> Get(DateTime dateAfter)
     {
-        var userId = _authService.CheckUserAuth(_db, token);
+        var userAuth = _authProvider.GetUserAuth();
 
-        if (userId != 0)
+        if (userAuth.IsAuthorized)
             return Ok(await _db.Messages
                 .Where(m =>
                     m.Sent >= dateAfter
                     && _db.UserChatLinks.Any(ucl =>
-                        ucl.UserId == userId
+                        ucl.UserId == userAuth.UserId
                         && ucl.ChatId == m.ChatId))
                 .ToListAsync());
 
 
-        if (!_authService.CheckAdminAuth(_db, token))
+        if (!_authProvider.GetAdminAuth())
             return Unauthorized();
 
         return Ok(await _db.Messages.Where(m => m.Sent >= dateAfter).ToListAsync());
@@ -49,16 +49,14 @@ public class MessagesController : ControllerBase
 
     // get messages by datetime and chat
     [HttpGet("chat")]
-    public async Task<ActionResult<List<Message>>> Get(string token, DateTime dateAfter,
+    public async Task<ActionResult<List<Message>>> Get(DateTime dateAfter,
         DateTime? dateBefore, long chatId)
     {
-        //var date = new DateTime(datetime);
-        var userId = _authService.CheckUserAuth(_db, token);
-
-        if (userId == 0) return Unauthorized();
+        var userAuth = _authProvider.GetUserAuth();
+        if (!userAuth.IsAuthorized) return Unauthorized();
 
         // есть ли юзер в чате
-        if (!_db.UserChatLinks.Any(ucl => ucl.UserId == userId
+        if (!_db.UserChatLinks.Any(ucl => ucl.UserId == userAuth.UserId
                                           && ucl.ChatId == chatId))
             return BadRequest();
 
@@ -71,22 +69,22 @@ public class MessagesController : ControllerBase
 
     // send message
     [HttpPost]
-    public async Task<ActionResult<Message>> Post(string token, long chatId, string text)
+    public async Task<ActionResult<Message>> Post(long chatId, string text)
     {
-        var userId = _authService.CheckUserAuth(_db, token);
-        if (userId == 0) return Unauthorized();
+        var userAuth = _authProvider.GetUserAuth();
+        if (!userAuth.IsAuthorized) return Unauthorized();
 
         // todo admin things??
 
         // есть ли юзер в чате
-        if (!_db.UserChatLinks.Any(ucl => ucl.UserId == userId
+        if (!_db.UserChatLinks.Any(ucl => ucl.UserId == userAuth.UserId
                                           && ucl.ChatId == chatId))
             return BadRequest();
 
         var newMessage = _db.Messages.Add(new Message
         {
             ChatId = chatId,
-            UserId = userId,
+            UserId = userAuth.UserId,
             Text = text,
             Sent = _dateTimeService.CurrentDateTime
         });
@@ -100,9 +98,9 @@ public class MessagesController : ControllerBase
 
     // generate random data in DB
     [HttpPost("generate")]
-    public async Task<ActionResult> Post(string token)
+    public async Task<ActionResult> Post()
     {
-        var admin = _authService.CheckAdminAuth(_db, token);
+        var admin = _authProvider.GetAdminAuth();
         if (!admin) return Unauthorized();
 
         var rnd = new Random(Environment.TickCount);

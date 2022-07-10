@@ -10,22 +10,25 @@ namespace CorpMessengerBackend.Controllers;
 [ApiController]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
     private readonly IAppDataContext _db;
+    private readonly HttpContextUserAuthProvider _authProvider;
+    private readonly IAuthService _authService;
 
-    public AuthController(IAppDataContext context, IAuthService authService)
+    public AuthController(IAppDataContext context, IAuthService authService, HttpContextUserAuthProvider authProvider)
     {
         _db = context;
         _authService = authService;
+        _authProvider = authProvider;
     }
 
     [HttpGet] // check user auth
     public Task<ActionResult<long>> Get(Credentials credentials)
     {
-        if (credentials.DeviceId == "" || credentials.Token is "" or null)
+        if (   string.IsNullOrEmpty(credentials.DeviceId) 
+            || string.IsNullOrEmpty(_authProvider.GetToken()))
             return Task.FromResult<ActionResult<long>>(BadRequest(0));
 
-        return Task.FromResult<ActionResult<long>>(_authService.CheckUserAuth(_db, credentials.Token));
+        return Task.FromResult<ActionResult<long>>(_authProvider.GetUserAuth().UserId);
     }
 
     [HttpPost] // user auth
@@ -34,10 +37,10 @@ public class AuthController : ControllerBase
         if (credentials.DeviceId == "" || credentials.Email == "" || credentials.Password == "")
             return BadRequest();
 
-        var newAuth = await _authService.SignInEmail(_db, credentials);
+        var newAuth = await _authService.SignInEmail(_db, credentials);///////////////////
 
         if (newAuth == null || newAuth.AuthToken == "") return Unauthorized();
-
+        
         credentials.Token = newAuth.AuthToken;
 
         return Ok(credentials);
@@ -46,22 +49,23 @@ public class AuthController : ControllerBase
     [HttpDelete]
     public Task<ActionResult<bool>> Delete(Credentials credentials)
     {
-        if (credentials.Token == "" || credentials.DeviceId == "")
+        if (string.IsNullOrEmpty(_authProvider.GetToken()) 
+            || string.IsNullOrEmpty(credentials.DeviceId))
             return Task.FromResult<ActionResult<bool>>(BadRequest(false));
 
-        var signOutResult = _authService.SignOut(_db, credentials);
+        var signOutResult = _authService.SignOut(_db, HttpContext);
 
         return Task.FromResult<ActionResult<bool>>(Ok(signOutResult));
     }
 
     [HttpPost("renew")] // renew user auth
-    //[Route("api/[controller]/renew")]
     public async Task<ActionResult<Credentials>> UpdateAuth(Credentials credentials)
     {
-        if (credentials.DeviceId == "" || credentials.Token == "")
+        if (string.IsNullOrEmpty(_authProvider.GetToken()) 
+            || string.IsNullOrEmpty(credentials.DeviceId))
             return BadRequest();
 
-        var renewedAuth = await _authService.RenewAuth(_db, credentials);
+        var renewedAuth = await _authService.RenewAuth(_db, credentials,  HttpContext);
 
         if (renewedAuth == null || renewedAuth.AuthToken == "") return Unauthorized();
 

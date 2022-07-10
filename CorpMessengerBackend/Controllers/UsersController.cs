@@ -13,16 +13,18 @@ namespace CorpMessengerBackend.Controllers;
 [ApiController]
 public class UsersController : ControllerBase
 {
-    private readonly IAuthService _authService;
     private readonly IAppDataContext _db;
     private readonly ICriptographyProvider _cryptographyProvider;
+    private readonly IUserAuthProvider _authProvider;
+    private readonly IAuthService _authService;
 
-    public UsersController(IAppDataContext dataContext,
-        IAuthService authService, ICriptographyProvider cryptographyProvider)
+    public UsersController(IAppDataContext dataContext, ICriptographyProvider cryptographyProvider, 
+        IUserAuthProvider authProvider, IAuthService authService)
     {
         _db = dataContext;
-        _authService = authService;
         _cryptographyProvider = cryptographyProvider;
+        _authProvider = authProvider;
+        _authService = authService;
 
         if (!_db.Users.Any())
         {
@@ -62,18 +64,15 @@ public class UsersController : ControllerBase
 
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<User>>> Get(string token)
+    public async Task<ActionResult<IEnumerable<User>>> Get()
     {
-        if (_authService.CheckUserAuth(_db, token) != 0 || _authService.CheckAdminAuth(_db, token))
-            return await _db.Users.ToArrayAsync();
-
-        return Unauthorized();
+        return await _db.Users.ToArrayAsync();
     }
 
     [HttpPost] // create new user
-    public async Task<ActionResult<User>> Post(User user, string token)
+    public async Task<ActionResult<User>> Post(User user)
     {
-        if (!_authService.CheckAdminAuth(_db, token))
+        if (!_authProvider.GetAdminAuth())
             return Unauthorized();
 
         user.Deleted = false;
@@ -108,16 +107,11 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut] // update user info
-    public async Task<ActionResult<User>> Put(User user, string token)
+    public async Task<ActionResult<User>> Put(User user)
     {
-        if (!_authService.CheckAdminAuth(_db, token))
+        if (!_authProvider.GetAdminAuth())
             return Unauthorized();
-
-        // if (user == null)
-        // {
-        //     return BadRequest();
-        // }
-
+        
         if (!_db.Users.Any(x => x.UserId == user.UserId && !x.Deleted)) return NotFound();
 
         //// todo change pwd somehow
@@ -130,9 +124,9 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete]
-    public async Task<ActionResult<User>> Delete(long userId, string token)
+    public async Task<ActionResult<User>> Delete(long userId)
     {
-        if (!_authService.CheckAdminAuth(_db, token))
+        if (!_authProvider.GetAdminAuth())
             return Unauthorized();
 
         var user = _db.Users.FirstOrDefault(x => x.UserId == userId
@@ -145,8 +139,7 @@ public class UsersController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        _authService.SignOutFull(_db, userId);
-        // todo del all chat links
+        await _authService.SignOutFull(_db, userId);
 
         return Ok(user);
     }
