@@ -53,7 +53,7 @@ public class AuthController : ControllerBase
             || string.IsNullOrEmpty(credentials.DeviceId))
             return Task.FromResult<ActionResult<bool>>(BadRequest(false));
 
-        var signOutResult = _authService.SignOut(_db, HttpContext);
+        var signOutResult = _authService.SignOut(_db);
 
         return Task.FromResult<ActionResult<bool>>(Ok(signOutResult));
     }
@@ -65,7 +65,7 @@ public class AuthController : ControllerBase
             || string.IsNullOrEmpty(credentials.DeviceId))
             return BadRequest();
 
-        var renewedAuth = await _authService.RenewAuth(_db, credentials,  HttpContext);
+        var renewedAuth = await _authService.RenewAuth(_db, credentials);
 
         if (renewedAuth == null || renewedAuth.AuthToken == "") return Unauthorized();
 

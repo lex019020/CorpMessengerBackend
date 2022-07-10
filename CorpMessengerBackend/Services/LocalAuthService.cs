@@ -55,7 +55,7 @@ public class LocalAuthService : IAuthService
         return newAuth;
     }
 
-    public async Task<bool> SignOut(IAppDataContext dataContext, HttpContext httpContext)
+    public async Task<bool> SignOut(IAppDataContext dataContext)
     {
         var authToDel = dataContext.Auths.FirstOrDefault(
             a => a.AuthToken == _userAuthProvider.GetToken());
@@ -106,7 +106,7 @@ public class LocalAuthService : IAuthService
         return token == a.Token;
     }
 
-    public async Task<Auth?> RenewAuth(IAppDataContext context, Credentials credentials, HttpContext httpContext)
+    public async Task<Auth?> RenewAuth(IAppDataContext context, Credentials credentials)
     {
         var auth = context.Auths.FirstOrDefault(a => a.AuthToken == _userAuthProvider.GetToken()
                                                      && a.DeviceId == credentials.DeviceId);

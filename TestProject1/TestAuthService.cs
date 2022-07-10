@@ -23,6 +23,7 @@ namespace TestProject1
         private readonly Random _rnd = new Random();
         private readonly Mock<ICriptographyProvider> _cryptoMock;
         private readonly Mock<IDateTimeService> _dateTimeMock;
+        private readonly Mock<IUserAuthProvider> _authProviderMock;
         private readonly LocalAuthService _sut;
         private readonly DateTime _dateTimeMin = DateTime.MinValue;
 
@@ -30,7 +31,8 @@ namespace TestProject1
         {
             _cryptoMock = new();
             _dateTimeMock = new ();
-            _sut = new(_cryptoMock.Object, _dateTimeMock.Object);
+            _authProviderMock = new Mock<IUserAuthProvider>();
+            _sut = new(_cryptoMock.Object, _dateTimeMock.Object, _authProviderMock.Object);
         }
 
         [TestMethod]
@@ -260,10 +262,11 @@ namespace TestProject1
             });
 
             context.SaveChanges();
+            _authProviderMock.Setup(m => m.GetToken()).Returns(creds.Token);
             
             
             // Act
-            var result = _sut.SignOut(context, creds);
+            var result = _sut.SignOut(context);
             
             
             // Assert
@@ -314,6 +317,7 @@ namespace TestProject1
             
             _dateTimeMock.Setup(m => m.CurrentDateTime).Returns(_dateTimeMin);
             _dateTimeMock.Setup(m => m.MinValidTokenDateTime).Returns(_dateTimeMin);
+            _authProviderMock.Setup(m => m.GetToken()).Returns(creds.Token);
             
             
             // Act
@@ -369,6 +373,7 @@ namespace TestProject1
             
             _dateTimeMock.Setup(m => m.CurrentDateTime).Returns(_dateTimeMin.AddDays(8));
             _dateTimeMock.Setup(m => m.MinValidTokenDateTime).Returns(_dateTimeMin.AddDays(8));
+            _authProviderMock.Setup(m => m.GetToken()).Returns(creds.Token);
             
             
             // Act
@@ -424,6 +429,7 @@ namespace TestProject1
             _dateTimeMock.Setup(m => m.MinValidTokenDateTime).Returns(_dateTimeMin);
             var newToken = "tokentokentoken1111111111111111";
             _cryptoMock.Setup(m => m.GenerateNewToken()).Returns(newToken);
+            _authProviderMock.Setup(m => m.GetToken()).Returns(creds.Token);
             
             // Act
             var result = await _sut.RenewAuth(context, creds);
@@ -480,6 +486,7 @@ namespace TestProject1
             _dateTimeMock.Setup(m => m.MinValidTokenDateTime).Returns(_dateTimeMin);
             var newToken = "tokentokentoken1111111111111111";
             _cryptoMock.Setup(m => m.GenerateNewToken()).Returns(newToken);
+            _authProviderMock.Setup(m => m.GetToken()).Returns(creds.Token);
             
             // Act
             var result = await _sut.RenewAuth(context, creds);

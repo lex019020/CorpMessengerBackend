@@ -17,7 +17,7 @@ public interface IAuthService
     /// <exception cref="UnauthorizedAccessException"></exception>
     public Task<Auth?> SignInEmail(IAppDataContext context, Credentials credentials);
 
-    public Task<bool> SignOut(IAppDataContext dataContext, HttpContext httpContext);
+    public Task<bool> SignOut(IAppDataContext dataContext);
 
     /// <summary>
     ///     Full sign-out
@@ -47,7 +47,6 @@ public interface IAuthService
     /// </summary>
     /// <param name="context"></param>
     /// <param name="credentials"></param>
-    /// <param name="httpContext"></param>
     /// <returns></returns>
-    public Task<Auth?> RenewAuth(IAppDataContext context, Credentials credentials, HttpContext httpContext);
+    public Task<Auth?> RenewAuth(IAppDataContext context, Credentials credentials);
 }

@@ -28,10 +28,10 @@ public class Startup
         services.AddControllers();
         services.AddRazorPages();
 
-        services.AddSingleton<IAuthService, LocalAuthService>();
         services.AddSingleton<ICriptographyProvider, CryptographyService>();
         services.AddSingleton<IDateTimeService, DateTimeService>();
-        
+
+        services.AddScoped<IAuthService, LocalAuthService>();
         services.AddScoped<IUserAuthProvider, HttpContextUserAuthProvider>();
     }
 
