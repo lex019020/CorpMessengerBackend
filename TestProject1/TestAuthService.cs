@@ -1,18 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using CorpMessengerBackend.HttpObjects;
 using CorpMessengerBackend.Models;
 using CorpMessengerBackend.Services;
-using Microsoft.Build.Evaluation;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Moq;
 
 namespace TestProject1

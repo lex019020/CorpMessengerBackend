@@ -32,20 +32,18 @@ public class ChatController : ControllerBase
         var userAuth = _authProvider.GetUserAuth();
         var adminAuth = _authProvider.GetAdminAuth();
 
-        var userChatsList = new List<ChatInfo?>();
+        //var userChatsList = new List<ChatInfo?>();
 
         if (adminAuth)
         {
-            userChatsList.AddRange(_db.Chats.Select(c => GetInfoById(c.ChatId)));
-
-            return Ok(userChatsList);
+            return Ok(_db.Chats.Select(c => GetInfoById(c.ChatId)));
         }
 
         var chatLinks = await _db.UserChatLinks
             .Where(ucl => ucl.UserId == userAuth.UserId).ToListAsync();
 
         // собираем список чатов
-        chatLinks.ForEach(ucl => userChatsList.Add(GetInfoById(ucl.ChatId)));
+        var userChatsList = chatLinks.Select(ucl => GetInfoById(ucl.ChatId));
 
         if (userChatsList.Contains(null)) return BadRequest();
 
@@ -242,8 +240,6 @@ public class ChatController : ControllerBase
         if (!_db.UserChatLinks.Any(ucl => ucl.ChatId == chat.ChatId
                                           && ucl.UserId == userAuth.UserId))
             return BadRequest();
-
-        
 
         // проверка что кикаемый есть в чате
         var link = _db.UserChatLinks.FirstOrDefault(

@@ -12,7 +12,7 @@ public class Message
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid MessageId { get; set; }
 
-    [Required] public long ChatId { get; set; }
+    [Required] public long ChatId { get; init; }
 
     public long? UserId { get; set; }
 
@@ -20,7 +20,7 @@ public class Message
 
     public long? AttachmentId { get; set; }
 
-    [Required] public DateTime Sent { get; set; }
+    [Required] public DateTime Sent { get; init; }
 
     [ForeignKey("ChatId")] public virtual Chat Chat { get; set; }
 

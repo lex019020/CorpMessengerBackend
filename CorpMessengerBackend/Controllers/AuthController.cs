@@ -11,10 +11,10 @@ namespace CorpMessengerBackend.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAppDataContext _db;
-    private readonly HttpContextUserAuthProvider _authProvider;
+    private readonly IUserAuthProvider _authProvider;
     private readonly IAuthService _authService;
 
-    public AuthController(IAppDataContext context, IAuthService authService, HttpContextUserAuthProvider authProvider)
+    public AuthController(IAppDataContext context, IAuthService authService, IUserAuthProvider authProvider)
     {
         _db = context;
         _authService = authService;
